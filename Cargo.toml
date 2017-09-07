@@ -1,0 +1,8 @@
+[package]
+name = "cardgame_widgets"
+version = "0.1.0"
+authors = ["alanpoon"]
+
+[dependencies]
+conrod = { version ="0.54"}
+conrod_derive = "0.1.0"
