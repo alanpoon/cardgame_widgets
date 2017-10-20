@@ -4,5 +4,5 @@ version = "0.1.0"
 authors = ["alanpoon"]
 
 [dependencies]
-conrod = { version ="0.54"}
+conrod = { path ="../conrod"}
 conrod_derive = "0.1.0"

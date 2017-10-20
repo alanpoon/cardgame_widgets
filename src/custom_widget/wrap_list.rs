@@ -1,5 +1,5 @@
 use conrod::{self, widget,  Positionable, Widget,  color,  Ui, UiCell,
-             graph};
+             graph,Sizeable};
 
 use std;
 use conrod::position::Scalar;
