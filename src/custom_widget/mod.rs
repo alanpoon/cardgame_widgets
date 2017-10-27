@@ -8,4 +8,5 @@ pub mod pad_text_button;
 pub mod backcardview;
 pub mod instructionview;
 pub mod table_list;
+pub mod dragdrop_list;
 //pub mod test;

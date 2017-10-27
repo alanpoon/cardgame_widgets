@@ -1,4 +1,4 @@
-use conrod::{self, widget,  Positionable, Widget, image, Sizeable};
+use conrod::{self, widget, Positionable, Widget, image, Sizeable};
 use sprite::SpriteInfo;
 use custom_widget::animated_button::AnimatedButton;
 /// The type upon which we'll implement the `Widget` trait.
@@ -96,7 +96,7 @@ impl<'a> Widget for CardViewPartial<'a> {
     /// Update the state of the button by handling any input that has occurred since the last
     /// update.
     fn update(self, args: widget::UpdateArgs<Self>) -> Self::Event {
-        let widget::UpdateArgs { id, state, rect, mut ui,  .. } = args;
+        let widget::UpdateArgs { id, state, rect, mut ui, .. } = args;
         let (interaction, times_triggered) = interaction_and_times_triggered(id, ui);
 
         // Finally, we'll describe how we want our widget drawn by simply instantiating the
@@ -110,14 +110,14 @@ impl<'a> Widget for CardViewPartial<'a> {
         };
 
         let _style = self.vec_style[self.card_style_t];
-            let te = _style.src_rect(self.card_index as f64);
-            widget::Image::new(self.image)
-                .source_rectangle(te)
-                .w_h(wh_rect.0, wh_rect.1)
-                .middle()
-                .parent(id)
-                .graphics_for(id)
-                .set(state.ids.bottle0, ui);
+        let te = _style.src_rect(self.card_index as f64);
+        widget::Image::new(self.image)
+            .source_rectangle(te)
+            .w_h(wh_rect.0, wh_rect.1)
+            .middle()
+            .parent(id)
+            .graphics_for(id)
+            .set(state.ids.bottle0, ui);
 
         Some(())
     }

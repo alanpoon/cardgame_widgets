@@ -1,4 +1,4 @@
-use conrod::{self, widget, Positionable, Widget, Sizeable, color, text,image};
+use conrod::{self, widget, Positionable, Widget, Sizeable, color, text, image};
 use sprite::SpriteInfo;
 /// The type upon which we'll implement the `Widget` trait.
 #[derive(WidgetCommon)]
@@ -7,9 +7,9 @@ pub struct BackCardView<'a> {
     /// really have to worry about it.
     #[conrod(common_builder)]
     common: widget::CommonBuilder,
-    pub card_image:image::Id,
+    pub card_image: image::Id,
     pub card_index: f64,
-    pub card_sprite:SpriteInfo,
+    pub card_sprite: SpriteInfo,
     pub name: &'a str,
     /// See the Style struct below.
     style: Style,
@@ -48,15 +48,15 @@ pub struct State {
 
 impl<'a> BackCardView<'a> {
     /// Create a button context to be built upon.
-    pub fn new(card_image:image::Id,
+    pub fn new(card_image: image::Id,
                card_index: f64,
-               card_sprite:SpriteInfo,
+               card_sprite: SpriteInfo,
                name: &'a str)
                -> Self {
         BackCardView {
             card_image: card_image,
             card_index: card_index,
-            card_sprite:card_sprite,
+            card_sprite: card_sprite,
             name: name,
             common: widget::CommonBuilder::default(),
             style: Style::default(),
@@ -94,17 +94,17 @@ impl<'a> Widget for BackCardView<'a> {
     /// Update the state of the button by handling any input that has occurred since the last
     /// update.
     fn update(self, args: widget::UpdateArgs<Self>) -> Self::Event {
-        let widget::UpdateArgs {  state, rect, mut ui, .. } = args;
+        let widget::UpdateArgs { state, rect, mut ui, .. } = args;
 
         let (x, _, _, h) = rect.x_y_w_h();
-            
-            widget::Image::new(self.card_image)
-                .source_rectangle(self.card_sprite.src_rect(self.card_index))
-                .mid_top()
-                .h(0.7 * h)
-                .padded_w_of(state.ids.frame, 5.0)
-                .set(state.ids.cardbase, ui);
-        
+
+        widget::Image::new(self.card_image)
+            .source_rectangle(self.card_sprite.src_rect(self.card_index))
+            .mid_top()
+            .h(0.7 * h)
+            .padded_w_of(state.ids.frame, 5.0)
+            .set(state.ids.cardbase, ui);
+
         let mut f1 = 16 as u32;
         let mut l1 = 2.5;
 
@@ -112,7 +112,7 @@ impl<'a> Widget for BackCardView<'a> {
             f1 -= 1;
             l1 -= 0.2;
         }
-         widget::Text::new(self.name)
+        widget::Text::new(self.name)
             .font_size(f1)
             .down_from(state.ids.cardbase, 0.0)
             .padded_w_of(state.ids.cardbase, 10.0)

@@ -2,16 +2,16 @@ use conrod::{self, widget, Colorable, Positionable, Widget, Sizeable, color, tex
 use std::collections::HashMap;
 use custom_widget::pad_text_button;
 
-pub trait TableListTexts{
-     fn text_ready(&self)->&'static str;
-     fn text_leave(&self)->&'static str;
-     fn text_join(&self)->&'static str;
-     fn text_playergame(&self)->&'static str;
-     fn text_changeto(&self)->&'static str;
+pub trait TableListTexts {
+    fn text_ready(&self) -> &'static str;
+    fn text_leave(&self) -> &'static str;
+    fn text_join(&self) -> &'static str;
+    fn text_playergame(&self) -> &'static str;
+    fn text_changeto(&self) -> &'static str;
 }
 /// The type upon which we'll implement the `Widget` trait.
 #[derive(WidgetCommon)]
-pub struct TableList<'a,T:TableListTexts+'a> {
+pub struct TableList<'a, T: TableListTexts + 'a> {
     /// An object that handles some of the dirty work of rendering a GUI. We don't
     /// really have to worry about it.
     #[conrod(common_builder)]
@@ -23,7 +23,7 @@ pub struct TableList<'a,T:TableListTexts+'a> {
     pub players: &'a Vec<String>, //width%,text
     pub appdata: &'a T,
     pub table_space: usize,
-    pub max_space:usize,
+    pub max_space: usize,
     pub joined: bool,
     /// See the Style struct below.
     style: Style,
@@ -63,7 +63,9 @@ pub struct State {
     ids: Ids,
 }
 
-impl<'a,T> TableList<'a,T> where T:TableListTexts+'a{
+impl<'a, T> TableList<'a, T>
+    where T: TableListTexts + 'a
+{
     /// Create a button context to be built upon.
     pub fn new(appdata: &'a T,
                ready: Box<Fn() + 'a>,
@@ -72,7 +74,7 @@ impl<'a,T> TableList<'a,T> where T:TableListTexts+'a{
                change_table_space_closure: Box<Fn(usize) + 'a>,
                players: &'a Vec<String>,
                table_space: usize,
-               max_space:usize,
+               max_space: usize,
                joined: bool)
                -> Self {
         TableList {
@@ -83,7 +85,7 @@ impl<'a,T> TableList<'a,T> where T:TableListTexts+'a{
             change_table_space_closure: change_table_space_closure,
             players: players,
             table_space: table_space,
-            max_space:max_space,
+            max_space: max_space,
             common: widget::CommonBuilder::default(),
             style: Style::default(),
             enabled: true,
@@ -100,7 +102,9 @@ impl<'a,T> TableList<'a,T> where T:TableListTexts+'a{
 
 /// A custom Conrod widget must implement the Widget trait. See the **Widget** trait
 /// documentation for more details.
-impl<'a,T> Widget for TableList<'a,T> where T:TableListTexts+'a {
+impl<'a, T> Widget for TableList<'a, T>
+    where T: TableListTexts + 'a
+{
     /// The State struct that we defined above.
     type State = State;
     /// The Style struct that we defined using the `widget_style!` macro.
@@ -193,9 +197,9 @@ impl<'a,T> Widget for TableList<'a,T> where T:TableListTexts+'a {
             .iter()
             .enumerate();
         if self.joined {
-             println!("inside self.joined");
+            println!("inside self.joined");
             let mut iplay = self.players.len();
-            while (iplay ) < self.table_space {
+            while (iplay) < self.table_space {
                 if let Some((counter, &sym)) = change_table_space_iter.next() {
                     if iplay != 1 {
                         let f = format!("{} {} {}",
@@ -209,7 +213,7 @@ impl<'a,T> Widget for TableList<'a,T> where T:TableListTexts+'a {
                             .set(sym, ui);
 
                         for i in but {
-                            (*self.change_table_space_closure)(iplay );
+                            (*self.change_table_space_closure)(iplay);
                         }
                     } else {
                         widget::Rectangle::outline([0.0, 0.0]).set(sym, ui);
@@ -218,9 +222,9 @@ impl<'a,T> Widget for TableList<'a,T> where T:TableListTexts+'a {
                 }
 
             }
-              println!("1st while");
+            println!("1st while");
             while iplay < self.max_space {
-                 println!("iplay {}",iplay);
+                println!("iplay {}",iplay);
                 if let Some((counter, &sym)) = change_table_space_iter.next() {
                     let f = format!("{} {} {}",
                                     self.appdata.text_changeto(),
@@ -233,7 +237,7 @@ impl<'a,T> Widget for TableList<'a,T> where T:TableListTexts+'a {
                         .set(sym, ui);
 
                     for i in but {
-                        (*self.change_table_space_closure)(iplay  + 1);
+                        (*self.change_table_space_closure)(iplay + 1);
                     }
                     iplay += 1;
                 }

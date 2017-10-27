@@ -1,4 +1,4 @@
-use conrod::{self, widget, Positionable, Widget, Sizeable, color, text, Labelable,image};
+use conrod::{self, widget, Positionable, Widget, Sizeable, color, text, Labelable, image};
 use custom_widget::animated_button;
 use sprite::SpriteInfo;
 /// The type upon which we'll implement the `Widget` trait.
@@ -115,31 +115,31 @@ impl<'a> Widget for PromptView<'a> {
             .w(w - self.prompt.0)
             .set(state.ids.list, ui);
         let mut vec_iter = self.buttons_sprite_label.iter();
-            while let (Some(&(z, label, ref closure)), Some(ref event)) =
-                (vec_iter.next(), events.next(ui, |_| false)) {
-                use conrod::widget::list_select::Event;
-                match event {
-                    &Event::Item(item) => {
-                        let button_index = 1.0;
-                        let d = animated_button::AnimatedButton::image(self.button_image)
-                            .label(label)
-                            .label_font_size(16)
-                            .label_color(color::BLACK)
-                            .w((w - self.prompt.0) / (num as f64))
-                            .h(0.3 * h)
-                            .normal_rect(z.src_rect(button_index))
-                            .hover_rect(z.src_rect(button_index + 1.0))
-                            .press_rect(z.src_rect(button_index + 2.0));
-                        let dj = item.set(d, ui);
-                        if dj.was_clicked() {
-                            (closure)();
-                        }
+        while let (Some(&(z, label, ref closure)), Some(ref event)) =
+            (vec_iter.next(), events.next(ui, |_| false)) {
+            use conrod::widget::list_select::Event;
+            match event {
+                &Event::Item(item) => {
+                    let button_index = 1.0;
+                    let d = animated_button::AnimatedButton::image(self.button_image)
+                        .label(label)
+                        .label_font_size(16)
+                        .label_color(color::BLACK)
+                        .w((w - self.prompt.0) / (num as f64))
+                        .h(0.3 * h)
+                        .normal_rect(z.src_rect(button_index))
+                        .hover_rect(z.src_rect(button_index + 1.0))
+                        .press_rect(z.src_rect(button_index + 2.0));
+                    let dj = item.set(d, ui);
+                    if dj.was_clicked() {
+                        (closure)();
                     }
-                    //&Event::Selection(idx) => {}
-                    _ => {}
-
                 }
+                //&Event::Selection(idx) => {}
+                _ => {}
+
             }
+        }
 
         Some(())
     }

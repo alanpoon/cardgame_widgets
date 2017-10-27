@@ -1,10 +1,11 @@
-use conrod::{self, widget, Positionable, Widget, color, Ui, UiCell, graph, Sizeable};
-
+use conrod::{self, widget, Positionable, Widget, color, Ui, UiCell, graph, Sizeable, Dimensions,
+             Theme, Rect};
+use conrod::position::Point;
 use std;
 use conrod::position::Scalar;
 /// The type upon which we'll implement the `Widget` trait.
 #[derive(WidgetCommon)]
-pub struct WrapList {
+pub struct DragDropList {
     /// An object that handles some of the dirty work of rendering a GUI. We don't
     /// really have to worry about it.
     #[conrod(common_builder)]
@@ -15,29 +16,21 @@ pub struct WrapList {
 }
 
 #[derive(Copy, Clone, Debug, Default, PartialEq, WidgetStyle)]
-pub struct Style {
-    /// Color of the button's label.
-    #[conrod(default = "theme.shape_color")]
-    pub color: Option<conrod::Color>,
-    #[conrod(default = "theme.label_color")]
-    pub label_color: Option<conrod::Color>,
-    /// Font size of the button's label.
-    #[conrod(default = "theme.font_size_medium")]
-    pub label_font_size: Option<conrod::FontSize>,
-    /// Specify a unique font for the label.
-    #[conrod(default = "theme.font_id")]
-    pub label_font_id: Option<Option<conrod::text::font::Id>>,
-}
+pub struct Style {}
 
 widget_ids! {
     struct Ids {
-      items[]
+      items[],
+      drag_items[],
+      drag_canvas
     }
 }
 
-/// Represents the unique, cached state for our WrapList widget.
+/// Represents the unique, cached state for our DragDropList widget.
 pub struct State {
     ids: Ids,
+    rects: Vec<[f64; 2]>,
+    acc_w: f64,
 }
 /// The data necessary for instantiating a single item within a `List`.
 #[derive( Debug)]
@@ -59,12 +52,13 @@ impl<'a> Item<'a> {
     /// - dimensions of the widget.
     /// - parent of the widget.
     /// - and finally sets the widget within the `Ui`.
-    pub fn set<W>(mut self, widget: W, width: Scalar, ui: &mut UiCell) -> W::Event
+    pub fn set<W>(mut self, widget: W, width: Scalar, ui: &mut UiCell) -> widget::Id
         where W: Widget
     {
         let Item { total_w, widget_id, last_id, parent_id, .. } = self;
         let acc_w_c = self.acc_w.clone();
         let first_left_id_c = self.first_left_id.clone();
+
         if acc_w_c + width > total_w {
             *(self.acc_w) = width;
             widget.and(|w| down_position_item(w, first_left_id_c, parent_id, 0.0))
@@ -72,14 +66,17 @@ impl<'a> Item<'a> {
                          *(self.first_left_id) = Some(widget_id);
                          w
                      })
-                .set(widget_id, ui)
+                .set(widget_id, ui);
+
+
         } else {
             *(self.acc_w) = acc_w_c + width;
             if let None = last_id {
                 *(self.first_left_id) = Some(widget_id);
             }
-            widget.and(|w| right_position_item(w, last_id, parent_id, 0.0)).set(widget_id, ui)
+            widget.and(|w| right_position_item(w, last_id, parent_id, 0.0)).set(widget_id, ui);
         }
+        widget_id
     }
 }
 fn down_position_item<W>(widget: W,
@@ -120,6 +117,7 @@ pub struct Items {
     first_left_id: Option<widget::Id>,
     acc_w: f64,
 }
+
 impl Items {
     /// Yield the next `Item` in the list.
     pub fn next(&mut self, ui: &Ui) -> Option<Item> {
@@ -137,7 +135,7 @@ impl Items {
         let node_index =
             match ui.widget_graph()
                       .widget(list_id)
-                      .and_then(|container| container.unique_widget_state::<WrapList>())
+                      .and_then(|container| container.unique_widget_state::<DragDropList>())
                       .and_then(|&graph::UniqueWidgetState { ref state, .. }| {
                                     state.ids
                                         .items
@@ -169,26 +167,82 @@ impl Items {
         }
     }
 }
-impl WrapList {
+pub struct DragItem {
+    pub i: usize,
+    pub widget_id: widget::Id,
+    pub last_id: Option<widget::Id>,
+    pub parent_id: widget::Id,
+}
+impl DragItem {
+    pub fn set<W>(mut self, widget: W, xy: Point, ui: &mut UiCell) -> W::Event
+        where W: Widget
+    {
+        widget.xy_relative_to(self.parent_id, xy).graphics_for(self.parent_id).set(self.widget_id,
+                                                                                   ui)
+    }
+}
+pub struct DragItems {
+    item_indices: std::ops::Range<usize>,
+    next_item_indices_index: usize,
+    list_id: widget::Id,
+    last_id: Option<widget::Id>,
+}
+impl DragItems {
+    pub fn next(&mut self, ui: &Ui) -> Option<DragItem> {
+
+        let DragItems { ref mut item_indices,
+                        ref mut next_item_indices_index,
+                        ref mut last_id,
+                        list_id } = *self;
+
+
+        // Retrieve the `node_index` that was generated for the next `Item`.
+        let node_index =
+            match ui.widget_graph()
+                      .widget(list_id)
+                      .and_then(|container| container.unique_widget_state::<DragDropList>())
+                      .and_then(|&graph::UniqueWidgetState { ref state, .. }| {
+                                    state.ids
+                                        .drag_items
+                                        .get(*next_item_indices_index)
+                                        .map(|&id| id)
+                                }) {
+                Some(node_index) => {
+                    *next_item_indices_index += 1;
+                    Some(node_index)
+                }
+                None => return None,
+            };
+
+        match (item_indices.next(), node_index) {
+            (Some(i), Some(node_index)) => {
+                let item = DragItem {
+                    i: i,
+                    last_id: *last_id,
+                    widget_id: node_index,
+                    parent_id: list_id,
+                };
+                *last_id = Some(node_index);
+                Some(item)
+            }
+            _ => None,
+        }
+    }
+}
+impl DragDropList {
     /// Create a button context to be built upon.
     pub fn new(num: usize) -> Self {
-        WrapList {
+        DragDropList {
             common: widget::CommonBuilder::default(),
             style: Style::default(),
             num: num,
         }
     }
-
-    /// Specify the font used for displaying the label.
-    pub fn label_font_id(mut self, font_id: conrod::text::font::Id) -> Self {
-        self.style.label_font_id = Some(Some(font_id));
-        self
-    }
 }
 
 /// A custom Conrod widget must implement the Widget trait. See the **Widget** trait
 /// documentation for more details.
-impl Widget for WrapList {
+impl Widget for DragDropList {
     /// The State struct that we defined above.
     type State = State;
     /// The Style struct that we defined using the `widget_style!` macro.
@@ -196,10 +250,14 @@ impl Widget for WrapList {
     /// The event produced by instantiating the widget.
     ///
     /// `Some` when clicked, otherwise `None`.
-    type Event = Items;
+    type Event = (Items, DragItems);
 
     fn init_state(&self, id_gen: widget::id::Generator) -> Self::State {
-        State { ids: Ids::new(id_gen) }
+        State {
+            ids: Ids::new(id_gen),
+            rects: vec![],
+            acc_w: 0.0,
+        }
     }
 
     fn style(&self) -> Self::Style {
@@ -216,16 +274,25 @@ impl Widget for WrapList {
             let id_gen = &mut ui.widget_id_generator();
             state.update(|state| state.ids.items.resize(self.num, id_gen));
         }
-
+        if state.ids.drag_items.len() < self.num {
+            let id_gen = &mut ui.widget_id_generator();
+            state.update(|state| state.ids.drag_items.resize(self.num, id_gen));
+        }
         let items = Items {
             list_id: id,
-            item_indices: item_idx_range,
+            item_indices: item_idx_range.clone(),
             next_item_indices_index: 0,
             last_id: None,
             first_left_id: None,
             total_w: w,
             acc_w: 0.0,
         };
-        items
+        let dragitems = DragItems {
+            list_id: id,
+            next_item_indices_index: 0,
+            item_indices: item_idx_range,
+            last_id: None,
+        };
+        (items, dragitems)
     }
 }

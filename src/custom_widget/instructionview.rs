@@ -1,4 +1,4 @@
-use conrod::{self, widget,  Positionable, Widget,image, Sizeable, color, text, Labelable};
+use conrod::{self, widget, Positionable, Widget, image, Sizeable, color, text, Labelable};
 use custom_widget::animated_button;
 use sprite::SpriteInfo;
 /// The type upon which we'll implement the `Widget` trait.
@@ -8,9 +8,9 @@ pub struct InstructionView<'a> {
     /// really have to worry about it.
     #[conrod(common_builder)]
     common: widget::CommonBuilder,
-    pub transparent:image::Id,
-    pub button:image::Id,
-    pub button_sprite:SpriteInfo,
+    pub transparent: image::Id,
+    pub button: image::Id,
+    pub button_sprite: SpriteInfo,
     pub dist_arrow_from_center: [f64; 2],
     pub transparent_rect: [f64; 4],
     pub instruction: Option<&'a str>,
@@ -59,11 +59,11 @@ pub struct State {
 impl<'a> InstructionView<'a> {
     /// Create a button context to be built upon.
     pub fn new(transparent: image::Id,
-                button:image::Id,
-                button_sprite:SpriteInfo,
+               button: image::Id,
+               button_sprite: SpriteInfo,
                dist_arrow_from_center: [f64; 2],
                transparent_rect: [f64; 4],
-                ovaldim: [f64; 2],
+               ovaldim: [f64; 2],
                dif_frame: Option<i32>,
                instruction: Option<&'a str>,
                next: &'a str)
@@ -71,9 +71,9 @@ impl<'a> InstructionView<'a> {
         InstructionView {
             dist_arrow_from_center: dist_arrow_from_center,
             transparent_rect: transparent_rect,
-            transparent:transparent,
+            transparent: transparent,
             button: button,
-            button_sprite:button_sprite,
+            button_sprite: button_sprite,
             dif_frame: dif_frame,
             ovaldim: ovaldim,
             instruction: instruction,
@@ -114,15 +114,15 @@ impl<'a> Widget for InstructionView<'a> {
     /// Update the state of the button by handling any input that has occurred since the last
     /// update.
     fn update(self, args: widget::UpdateArgs<Self>) -> Self::Event {
-        let widget::UpdateArgs {  state, rect, mut ui,  .. } = args;
+        let widget::UpdateArgs { state, rect, mut ui, .. } = args;
 
         let (x, y, w, h) = rect.x_y_w_h();
         let mut result = false;
-            widget::Image::new(self.transparent)
-                .w_h(w * 1.2, h * 1.2)
-                .middle()
-                .set(state.ids.transparent, ui);
-        widget::Rectangle::fill_with([0.6*w, h * 0.3], color::LIGHT_YELLOW)
+        widget::Image::new(self.transparent)
+            .w_h(w * 1.2, h * 1.2)
+            .middle()
+            .set(state.ids.transparent, ui);
+        widget::Rectangle::fill_with([0.6 * w, h * 0.3], color::LIGHT_YELLOW)
             .mid_left()
             .set(state.ids.frame, ui);
 
@@ -145,11 +145,10 @@ impl<'a> Widget for InstructionView<'a> {
             }
 
         }
-        let start = [-0.3*w, 0.15*h];
-        let end = [-0.3*w +self.dist_arrow_from_center[0],0.15*h +self.dist_arrow_from_center[1]];
-        widget::Line::new(start, end)
-            .thickness(10.0)
-            .set(state.ids.arrow_body, ui);
+        let start = [-0.3 * w, 0.15 * h];
+        let end = [-0.3 * w + self.dist_arrow_from_center[0],
+                   0.15 * h + self.dist_arrow_from_center[1]];
+        widget::Line::new(start, end).thickness(10.0).set(state.ids.arrow_body, ui);
         if let Some(instruct) = self.instruction {
             let mut a1 = 20;
             let mut l1 = 2.5;
@@ -159,23 +158,23 @@ impl<'a> Widget for InstructionView<'a> {
             }
             widget::Text::new(instruct)
                 .font_size(a1)
-                .top_left_with_margins_on(state.ids.frame, 0.1 * h,10.0)
-                .w(0.6*w)
+                .top_left_with_margins_on(state.ids.frame, 0.1 * h, 10.0)
+                .w(0.6 * w)
                 .h(0.25 * h)
                 .set(state.ids.instruction, ui);
         }
 
-            let _style = self.button_sprite;
-            result = animated_button::AnimatedButton::image(self.button)
-                .label(self.next)
-                .normal_rect(_style.src_rect(7.0))
-                .hover_rect(_style.src_rect(7.0 + 1.0))
-                .press_rect(_style.src_rect(7.0 + 2.0))
-                .down_from(state.ids.frame, 0.0)
-                .w(100.0)
-                .h(70.0)
-                .set(state.ids.next, ui)
-                .was_clicked();
+        let _style = self.button_sprite;
+        result = animated_button::AnimatedButton::image(self.button)
+            .label(self.next)
+            .normal_rect(_style.src_rect(7.0))
+            .hover_rect(_style.src_rect(7.0 + 1.0))
+            .press_rect(_style.src_rect(7.0 + 2.0))
+            .down_from(state.ids.frame, 0.0)
+            .w(100.0)
+            .h(70.0)
+            .set(state.ids.next, ui)
+            .was_clicked();
 
         result
     }

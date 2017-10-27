@@ -1,4 +1,4 @@
-use conrod::{position};
+use conrod::position;
 use conrod::Rect;
 #[derive(Clone,Copy,PartialEq,Debug)]
 pub struct SpriteInfo {
