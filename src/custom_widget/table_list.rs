@@ -224,11 +224,11 @@ impl<'a, T> Widget for TableList<'a, T>
             }
             println!("1st while");
             while iplay < self.max_space {
-                println!("iplay {}",iplay);
+                println!("iplay {}", iplay);
                 if let Some((counter, &sym)) = change_table_space_iter.next() {
                     let f = format!("{} {} {}",
                                     self.appdata.text_changeto(),
-                                    (iplay ) + 1,
+                                    (iplay) + 1,
                                     self.appdata.text_playergame());
                     let but = pad_text_button::Button::new(4)
                         .label(&f)

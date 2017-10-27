@@ -66,6 +66,8 @@ impl<'a> Item<'a> {
                          *(self.first_left_id) = Some(widget_id);
                          w
                      })
+                     
+                     //.parent(self.parent_id)
                 .set(widget_id, ui);
 
 
@@ -74,7 +76,9 @@ impl<'a> Item<'a> {
             if let None = last_id {
                 *(self.first_left_id) = Some(widget_id);
             }
-            widget.and(|w| right_position_item(w, last_id, parent_id, 0.0)).set(widget_id, ui);
+            widget.and(|w| right_position_item(w, last_id, parent_id, 0.0))
+                     //.parent(self.parent_id)
+                     .set(widget_id, ui);
         }
         widget_id
     }
