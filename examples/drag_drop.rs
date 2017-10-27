@@ -20,6 +20,7 @@ widget_ids! {
 pub struct App {
     dragging: bool,
     hash: [Option<(conrod::position::Point, color::Color)>; 25],
+    temp:[Option<(conrod::position::Point, color::Color)>; 25],
 }
 #[derive(Clone)]
 pub enum ConrodMessage {
@@ -52,7 +53,8 @@ fn main() {
     color_hash[0] = Some(([0.0, 0.0], color::BLACK));
     color_hash[1] = Some(([0.0, 0.0], color::YELLOW));
     let mut app = App {
-        hash: color_hash,
+        hash: color_hash.clone(),
+        temp:color_hash,
         dragging: false,
     };
     println!("app {:?}", app.hash.clone());
@@ -146,20 +148,30 @@ fn set_widgets(ui: &mut conrod::UiCell, ids: &mut Ids, app: &mut App) {
     let app_pos = app.hash.clone();
     let mut k_h_iter = app_pos.iter();
     let mut c = 0;
-    let mut app_c = app.hash.clone(); //store during drag
-    while let (Some(item), Some(dragitem), Some(&Some(k_h))) =
-        (item0.next(ui), dragitem0.next(ui), k_h_iter.next()) {
+    let mut populated_j_ids =vec![];
+    while let (Some(item), Some(&Some(k_h))) =
+        (item0.next(ui),  k_h_iter.next()) {
         let j = widget::bordered_rectangle::BorderedRectangle::new([50.0, 50.0])
             .color(k_h.clone().1);
         let j_id = item.set(j.clone(), 50.0, ui);
         app.hash[c] = Some((ui.xy_of(j_id).unwrap(), k_h.clone().1));
-        let rect_dim = ui.wh_of(j_id).unwrap();
-
-        let mut mouse_point = None;
-        if let Some(mouse) = ui.widget_input(j_id).mouse() {
+        app.temp[c] = Some((ui.xy_of(j_id).unwrap(), k_h.clone().1));
+        populated_j_ids.push(j_id);
+        c += 1;
+    }
+    let mut k_h_iter2 = app_pos.iter();
+    let mut populated_j_ids_iter = populated_j_ids.iter();
+    let mut c2=0;
+    while let ( Some(dragitem),Some(&_j_id),Some(&Some(k_h))) = (dragitem0.next(ui),populated_j_ids_iter.next(), k_h_iter2.next()){
+            let j = widget::bordered_rectangle::BorderedRectangle::new([50.0, 50.0])
+            .color(k_h.clone().1);
+         let mut mouse_point = None;
+         let rect_dim = ui.wh_of(_j_id).unwrap();
+        if let Some(mouse) = ui.widget_input(_j_id).mouse() {
             if mouse.buttons.left().is_down() {
                 mouse_point = Some(mouse.abs_xy());
             } else if mouse.buttons.left().is_up() {
+                println!("mouse up");
                 mouse_point = None;
             }
         }
@@ -168,23 +180,24 @@ fn set_widgets(ui: &mut conrod::UiCell, ids: &mut Ids, app: &mut App) {
             let mut _c = 0;
             for _j in app.hash.iter() {
                 if let &Some(_p) = _j {
-                    if (m_point.get_x() <= _p.0.get_x() - rect_dim[0] * 0.5) &
-                       (m_point.get_x() >= _p.0.get_x() + rect_dim[0] * 0.5) &
-                       (m_point.get_y() <= _p.0.get_y() - rect_dim[1] * 0.5) &
-                       (m_point.get_y() >= _p.0.get_y() + rect_dim[1] * 0.5) {
+                    println!("m_point {:?},_p.0 {:?}, 0.5rect {:?}",m_point,_p.0,rect_dim[0] * 0.5);
+                    if (m_point.get_x() >= _p.0.get_x() - rect_dim[0] ) & //-491 >= -487-25
+                       (m_point.get_x() <= _p.0.get_x() + rect_dim[0] ) &//-491 <=-487+25
+                       (m_point.get_y() >= _p.0.get_y() - rect_dim[1] ) & //296.9 >= 327-25
+                       (m_point.get_y() <= _p.0.get_y() + rect_dim[1] ) { //296.9 <=327+25
                         break;
                     }
                     _c += 1;
                 }
 
             }
-            rearrange(c, _c, &mut app_c);
+            rearrange(c2, _c, &mut app.temp);
         } else {
-            app.hash = app_c;
+            let temp_c = app.temp.clone();
+            app.hash = temp_c;
         }
-        c += 1;
+        c2+=1;
     }
-
 
 }
 
@@ -192,23 +205,36 @@ fn set_widgets(ui: &mut conrod::UiCell, ids: &mut Ids, app: &mut App) {
 fn rearrange<T: Clone>(selected_i: usize,
                        corrected_i: usize,
                        hash: &mut [Option<([f64; 2], T)>; 25]) {
+                           println!("select{}, corrected{}",selected_i,corrected_i);
     let hash_c = hash.clone();
     for _i in 0..hash.len() {
         if _i == corrected_i {
-            hash[_i] = hash_c[selected_i].clone();
+            hash[_i] = match (&hash_c[selected_i],&hash_c[_i])  {
+                (&Some((_,ref a_s)),&Some((pos,_)))=>Some((pos,a_s.clone())),
+                _=>None
+            };
         }
         if selected_i < corrected_i {
             //moved backward ____S__->__C
             if (_i < corrected_i) & (_i >= selected_i) {
-                // ____S~~~~C
-                hash[_i] = hash_c[_i + 1].clone();;
+                println!("move backward");
+                // ____S~~~~C;
+                hash[_i] = match (&hash_c[_i + 1],&hash_c[_i])  {
+                (&Some((_,ref a_s)),&Some((pos,_)))=>Some((pos,a_s.clone())),
+                _=>None
+            };
             }
         } else if selected_i > corrected_i {
             //moved foward _____C__<-S
-            if (_i < selected_i) & (_i >= corrected_i) {
+            if (_i <= selected_i) & (_i > corrected_i) {
+                println!("move forward");
                 // ____C~~~S
-                hash[_i] = hash_c[_i - 1].clone();;
+                hash[_i] = match (&hash_c[_i - 1],&hash_c[_i])  {
+                (&Some((_,ref a_s)),&Some((pos,_)))=>Some((pos,a_s.clone())),
+                _=>None
+            };
             }
         }
+        
     }
 }
