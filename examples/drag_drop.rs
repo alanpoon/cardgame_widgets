@@ -51,8 +51,10 @@ fn main() {
     let mut captured_event: Option<ConrodMessage> = None;
     let sixteen_ms = std::time::Duration::from_millis(100);
     let mut color_hash = [None; 25];
-    color_hash[0] = Some(([0.0, 0.0], color::BLACK, None));
+    color_hash[0] = Some(([0.0, 0.0], color::DARK_YELLOW, None));
     color_hash[1] = Some(([0.0, 0.0], color::YELLOW, None));
+    color_hash[2] = Some(([0.0, 0.0], color::DARK_BLUE, None));
+    color_hash[3] = Some(([0.0, 0.0], color::LIGHT_PURPLE, None));
     let mut app = App {
         hash: color_hash.clone(),
         temp: color_hash,
@@ -144,7 +146,7 @@ fn main() {
 
 fn set_widgets(ui: &mut conrod::UiCell, ids: &mut Ids, app: &mut App) {
     widget::Canvas::new().color(color::LIGHT_BLUE).set(ids.master, ui);
-    let (mut item0, mut dragitem0) = dragdrop_list::DragDropList::new(2)
+    let (mut item0, mut dragitem0) = dragdrop_list::DragDropList::new(app.hash.len())
         .wh([200.0, 200.0])
         .middle_of(ids.master)
         .set(ids.wraplist, ui);
@@ -178,9 +180,6 @@ fn set_widgets(ui: &mut conrod::UiCell, ids: &mut Ids, app: &mut App) {
             c += 1;
         }
     }
-    println!("app.hash 1 {:?}, app.hash 2 {:?}",
-             app.hash.clone()[0].unwrap().1,
-             app.hash.clone()[1].unwrap().1);
     let mut k_h_iter2 = app_pos.iter();
     let mut populated_j_ids_iter = populated_j_ids.iter();
     let mut c2 = 0;
@@ -188,13 +187,13 @@ fn set_widgets(ui: &mut conrod::UiCell, ids: &mut Ids, app: &mut App) {
     let mut rect_dim = None;
     while let (Some(dragitem), Some(&_j_id), Some(&Some(k_h))) =
         (dragitem0.next(ui), populated_j_ids_iter.next(), k_h_iter2.next()) {
-        rect_dim = Some(ui.wh_of(_j_id).unwrap());
         if let Some(mouse) = ui.widget_input(_j_id).mouse() {
             if mouse.buttons.left().is_down() {
                 mouse_point = Some((c2, mouse.abs_xy()));
+                rect_dim = Some(ui.wh_of(_j_id).unwrap());
             } else if mouse.buttons.left().is_up() {
                 mouse_point = None;
-
+                rect_dim = None;
             }
         }
 
@@ -203,6 +202,10 @@ fn set_widgets(ui: &mut conrod::UiCell, ids: &mut Ids, app: &mut App) {
     if let (Some((c2, m_point)), Some(rect_dim)) = (mouse_point, rect_dim) {
         let mut _c = 0;
         for _j in app.hash.iter() {
+            if _c == c2 {
+                _c += 1;
+                continue;
+            }
             if let &Some((_, _, Some(p_widget))) = _j {
                 let _p_rect = ui.rect_of(p_widget).unwrap();
                 if _p_rect.is_over(m_point) {
@@ -220,14 +223,10 @@ fn set_widgets(ui: &mut conrod::UiCell, ids: &mut Ids, app: &mut App) {
                 len_of_some += 1;
             }
         }
-        let _k = if _c < 0 {
-            0
-        } else if _c >= len_of_some {
-            len_of_some - 1
-        } else {
-            _c
-        };
-        rearrange(c2, _k, &mut app.temp); //(selected,new,..)
+        let _k = if _c >= len_of_some { c2 } else { _c };
+        if _k != c2 {
+            rearrange(c2, _k, &mut app.temp); //(selected,new,..)
+        }
     } else {
         let now = std::time::Instant::now();
         if let &None = &app.last_release {
@@ -242,12 +241,11 @@ fn set_widgets(ui: &mut conrod::UiCell, ids: &mut Ids, app: &mut App) {
 fn rearrange<T: Clone>(selected_i: usize,
                        corrected_i: usize,
                        hash: &mut [Option<([f64; 2], T, Option<widget::Id>)>; 25]) {
-    println!("select{}, corrected{}", selected_i, corrected_i);
     let hash_c = hash.clone();
     for _i in 0..hash.len() {
         if _i == corrected_i {
             hash[_i] = match (&hash_c[selected_i], &hash_c[_i]) {
-                (&Some((_, ref a_s, ref k)), &Some((pos, _, _))) => {
+                (&Some((_, ref a_s, _)), &Some((pos, _, ref k))) => {
                     Some((pos, a_s.clone(), k.clone()))
                 }
                 _ => None,
@@ -259,7 +257,7 @@ fn rearrange<T: Clone>(selected_i: usize,
                 //println!("move backward");
                 // ____S~~~~C;
                 hash[_i] = match (&hash_c[_i + 1], &hash_c[_i]) {
-                    (&Some((_, ref a_s, ref k)), &Some((pos, _, _))) => {
+                    (&Some((_, ref a_s, _)), &Some((pos, _, ref k))) => {
                         Some((pos, a_s.clone(), k.clone()))
                     }
                     _ => None,
@@ -271,7 +269,7 @@ fn rearrange<T: Clone>(selected_i: usize,
                 //println!("move forward");
                 // ____C~~~S
                 hash[_i] = match (&hash_c[_i - 1], &hash_c[_i]) {
-                    (&Some((_, ref a_s, ref k)), &Some((pos, _, _))) => {
+                    (&Some((_, ref a_s, _)), &Some((pos, _, ref k))) => {
                         Some((pos, a_s.clone(), k.clone()))
                     }
                     _ => None,
