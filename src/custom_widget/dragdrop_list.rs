@@ -21,8 +21,6 @@ pub struct Style {}
 widget_ids! {
     struct Ids {
       items[],
-      drag_items[],
-      drag_canvas
     }
 }
 
@@ -171,68 +169,7 @@ impl Items {
         }
     }
 }
-pub struct DragItem {
-    pub i: usize,
-    pub widget_id: widget::Id,
-    pub last_id: Option<widget::Id>,
-    pub parent_id: widget::Id,
-}
-impl DragItem {
-    pub fn set<W>(mut self, widget: W, xy: Point, ui: &mut UiCell) -> W::Event
-        where W: Widget
-    {
-        widget.xy_relative_to(self.parent_id, xy).graphics_for(self.parent_id).set(self.widget_id,
-                                                                                   ui)
-    }
-}
-pub struct DragItems {
-    item_indices: std::ops::Range<usize>,
-    next_item_indices_index: usize,
-    list_id: widget::Id,
-    last_id: Option<widget::Id>,
-}
-impl DragItems {
-    pub fn next(&mut self, ui: &Ui) -> Option<DragItem> {
 
-        let DragItems { ref mut item_indices,
-                        ref mut next_item_indices_index,
-                        ref mut last_id,
-                        list_id } = *self;
-
-
-        // Retrieve the `node_index` that was generated for the next `Item`.
-        let node_index =
-            match ui.widget_graph()
-                      .widget(list_id)
-                      .and_then(|container| container.unique_widget_state::<DragDropList>())
-                      .and_then(|&graph::UniqueWidgetState { ref state, .. }| {
-                                    state.ids
-                                        .drag_items
-                                        .get(*next_item_indices_index)
-                                        .map(|&id| id)
-                                }) {
-                Some(node_index) => {
-                    *next_item_indices_index += 1;
-                    Some(node_index)
-                }
-                None => return None,
-            };
-
-        match (item_indices.next(), node_index) {
-            (Some(i), Some(node_index)) => {
-                let item = DragItem {
-                    i: i,
-                    last_id: *last_id,
-                    widget_id: node_index,
-                    parent_id: list_id,
-                };
-                *last_id = Some(node_index);
-                Some(item)
-            }
-            _ => None,
-        }
-    }
-}
 impl DragDropList {
     /// Create a button context to be built upon.
     pub fn new(num: usize) -> Self {
@@ -254,7 +191,7 @@ impl Widget for DragDropList {
     /// The event produced by instantiating the widget.
     ///
     /// `Some` when clicked, otherwise `None`.
-    type Event = (Items, DragItems);
+    type Event = Items;
 
     fn init_state(&self, id_gen: widget::id::Generator) -> Self::State {
         State {
@@ -278,10 +215,6 @@ impl Widget for DragDropList {
             let id_gen = &mut ui.widget_id_generator();
             state.update(|state| state.ids.items.resize(self.num, id_gen));
         }
-        if state.ids.drag_items.len() < self.num {
-            let id_gen = &mut ui.widget_id_generator();
-            state.update(|state| state.ids.drag_items.resize(self.num, id_gen));
-        }
         let items = Items {
             list_id: id,
             item_indices: item_idx_range.clone(),
@@ -291,12 +224,6 @@ impl Widget for DragDropList {
             total_w: w,
             acc_w: 0.0,
         };
-        let dragitems = DragItems {
-            list_id: id,
-            next_item_indices_index: 0,
-            item_indices: item_idx_range,
-            last_id: None,
-        };
-        (items, dragitems)
+        items
     }
 }

@@ -9,6 +9,7 @@ use conrod::backend::glium::glium::{self, glutin, Surface};
 use conrod::event;
 use conrod::widget::envelope_editor::EnvelopePoint;
 use cardgame_widgets::custom_widget::dragdrop_list;
+
 use std::time::Instant;
 
 widget_ids! {
@@ -146,7 +147,7 @@ fn main() {
 
 fn set_widgets(ui: &mut conrod::UiCell, ids: &mut Ids, app: &mut App) {
     widget::Canvas::new().color(color::LIGHT_BLUE).set(ids.master, ui);
-    let (mut item0, mut dragitem0) = dragdrop_list::DragDropList::new(app.hash.len())
+    let mut item0 = dragdrop_list::DragDropList::new(app.hash.len())
         .wh([200.0, 200.0])
         .middle_of(ids.master)
         .set(ids.wraplist, ui);
@@ -185,8 +186,7 @@ fn set_widgets(ui: &mut conrod::UiCell, ids: &mut Ids, app: &mut App) {
     let mut c2 = 0;
     let mut mouse_point = None;
     let mut rect_dim = None;
-    while let (Some(dragitem), Some(&_j_id), Some(&Some(k_h))) =
-        (dragitem0.next(ui), populated_j_ids_iter.next(), k_h_iter2.next()) {
+    while let (Some(&_j_id), Some(&Some(k_h))) = (populated_j_ids_iter.next(), k_h_iter2.next()) {
         if let Some(mouse) = ui.widget_input(_j_id).mouse() {
             if mouse.buttons.left().is_down() {
                 mouse_point = Some((c2, mouse.abs_xy()));
