@@ -16,7 +16,8 @@ widget_ids! {
     pub struct Ids {
          master,
          wraplist,
-         floating_a
+         floating_a,
+         exit_id
     }
 }
 pub struct App {
@@ -139,9 +140,17 @@ fn main() {
 fn set_widgets(ui: &mut conrod::UiCell, ids: &mut Ids, app: &mut App) {
     widget::Canvas::new().color(color::LIGHT_BLUE).set(ids.master, ui);
     let j = widget::Canvas::new().w_h(50.0, 50.0);
-    DragDropList::new(&mut app.hash, Box::new(move |v| j.color(v)), 50.0)
+    widget::Rectangle::fill([400.0, 400.0])
+        .top_right_of(ids.master)
+        .color(color::GREEN)
+        .set(ids.exit_id, ui);
+    let exitable = DragDropList::new(&mut app.hash, Box::new(move |v| j.color(v)), 50.0)
         .wh([200.0, 200.0])
+        .color(color::RED)
+        .exit_id(Some(Some(ids.exit_id)))
         .middle_of(ids.master)
         .set(ids.wraplist, ui);
-
+    if let Some(exitable) = exitable {
+        println!("exitable {:?}", exitable);
+    }
 }

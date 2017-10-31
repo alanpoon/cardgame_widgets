@@ -1,5 +1,5 @@
 use conrod::{self, widget, Positionable, Widget, color, Ui, UiCell, graph, Sizeable, Dimensions,
-             Theme, Rect};
+             Theme, Rect, Colorable};
 use std;
 use conrod::position::Scalar;
 use conrod::widget::Canvas;
@@ -22,11 +22,17 @@ pub struct DragDropList<'a, T>
 }
 
 #[derive(Copy, Clone, Debug, Default, PartialEq, WidgetStyle)]
-pub struct Style {}
+pub struct Style {
+    #[conrod(default = "theme.shape_color")]
+    pub color: Option<conrod::Color>,
+    #[conrod(default="None")]
+    pub exit_id: Option<Option<widget::Id>>,
+}
 
 widget_ids! {
     struct Ids {
       items[],
+      rect
     }
 }
 
@@ -186,6 +192,9 @@ impl<'a, T> DragDropList<'a, T>
             item_width: item_width,
         }
     }
+    builder_methods!{
+        pub exit_id { style.exit_id = Option<Option<widget::Id>> }
+    }
 }
 
 /// A custom Conrod widget must implement the Widget trait. See the **Widget** trait
@@ -199,8 +208,8 @@ impl<'a, T> Widget for DragDropList<'a, T>
     type Style = Style;
     /// The event produced by instantiating the widget.
     ///
-    /// `Some` when clicked, otherwise `None`.
-    type Event = ();
+    /// `Some` when an element exited, otherwise `None`.
+    type Event = Option<T>;
 
     fn init_state(&self, id_gen: widget::id::Generator) -> Self::State {
         let now = std::time::Instant::now();
@@ -220,16 +229,20 @@ impl<'a, T> Widget for DragDropList<'a, T>
     /// Update the state of the button by handling any input that has occurred since the last
     /// update.
     fn update(self, args: widget::UpdateArgs<Self>) -> Self::Event {
-        let widget::UpdateArgs { id, state, rect, mut ui, .. } = args;
+        let widget::UpdateArgs { id, state, rect, mut ui, style, .. } = args;
         let w = rect.w();
-
+        let h = rect.h();
         let item_idx_range = 0..self.values.len();
         if state.ids.items.len() < self.values.len() {
             let id_gen = &mut ui.widget_id_generator();
             state.update(|state| state.ids.items.resize(self.values.len(), id_gen));
         }
         let value_c = self.values.clone();
-
+        widget::Rectangle::fill([w, h])
+            .middle_of(id)
+            .graphics_for(id)
+            .color(style.color(&ui.theme))
+            .set(state.ids.rect, ui);
         if state.temp.len() < value_c.len() {
             for _i in state.temp.len()..value_c.len() {
                 if let Some(_v) = value_c.get(_i) {
@@ -295,9 +308,9 @@ impl<'a, T> Widget for DragDropList<'a, T>
                 c2 += 1;
             }
         }
+        let mut exit_id = None;
         if !mouse_down {
             if let Some((c2, m_point)) = state.mouse_point {
-
                 let mut _c = 0;
                 for _j in state.temp.iter() {
                     if _c == c2 {
@@ -313,22 +326,50 @@ impl<'a, T> Widget for DragDropList<'a, T>
                     }
 
                 }
-                let len_of_some = state.temp.len();
-                let _k = if _c >= len_of_some { c2 } else { _c };
-                if _k != c2 {
-                    state.update(|state| { rearrange(c2, _k, &mut state.temp); });
-                    //(selected,new,..)
-
-                    *self.values = state.temp
-                        .iter()
-                        .map(|&(_, ref value)| value.clone())
-                        .collect::<Vec<T>>();
+                let mut rearrange_bool = false;
+                if let Some(Some(exit_rect)) = style.exit_id {
+                    if ui.rect_of(exit_rect).unwrap().is_over(m_point) {
+                        rearrange_bool = false;
+                        state.update(|state| {
+                                         exit_id = Some(remove_by_index(c2, &mut state.temp));
+                                     });
+                    } else if ui.rect_of(state.ids.rect).unwrap().is_over(m_point) {
+                        rearrange_bool = true;
+                    }
+                } else if !ui.rect_of(state.ids.rect).unwrap().is_over(m_point) {
+                    rearrange_bool = false;
+                    state.update(|state| { remove_by_index(c2, &mut state.temp); });
+                } else {
+                    rearrange_bool = true;
                 }
+                if rearrange_bool {
+                    let len_of_some = state.temp.len();
+                    let _k = if _c >= len_of_some { c2 } else { _c };
+                    if _k != c2 {
+                        state.update(|state| { rearrange(c2, _k, &mut state.temp); });
+                    }
+                }
+                *self.values = state.temp
+                    .iter()
+                    .map(|&(_, ref value)| value.clone())
+                    .collect::<Vec<T>>();
                 state.update(|state| { state.mouse_point = None; });
+
             }
         }
-
+        exit_id
     }
+}
+impl<'a, T> Colorable for DragDropList<'a, T>
+    where T: Clone + Send + 'a + 'static + Debug
+{
+    fn color(mut self, color: conrod::Color) -> Self {
+        self.style.color = Some(color);
+        self
+    }
+}
+fn remove_by_index<T: Clone>(c2: usize, hash: &mut Vec<(Option<widget::Id>, T)>) -> T {
+    hash.remove(c2).1
 }
 fn rearrange<T: Clone>(selected_i: usize,
                        corrected_i: usize,
