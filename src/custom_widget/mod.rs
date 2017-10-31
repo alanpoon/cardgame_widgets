@@ -1,4 +1,4 @@
-pub mod animated_button;
+/*pub mod animated_button;
 pub mod tabview;
 pub mod list_select;
 pub mod cardviewpartial;
@@ -9,4 +9,6 @@ pub mod backcardview;
 pub mod instructionview;
 pub mod table_list;
 pub mod dragdrop_list;
+*/
+pub mod dragdrop_list1;
 //pub mod test;

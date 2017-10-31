@@ -4,27 +4,23 @@ extern crate conrod;
 extern crate conrod_derive;
 extern crate cardgame_widgets;
 
-use conrod::{widget, color, Colorable, Widget, Positionable, Sizeable, Borderable, Labelable};
+use conrod::{widget, color, Colorable, Widget, Positionable, Sizeable, Labelable};
 use conrod::backend::glium::glium::{self, glutin, Surface};
 use conrod::event;
-use conrod::widget::envelope_editor::EnvelopePoint;
-use cardgame_widgets::custom_widget::dragdrop_list;
+
+use cardgame_widgets::custom_widget::dragdrop_list1::DragDropList;
+
 use std::time::Instant;
 
 widget_ids! {
     pub struct Ids {
          master,
          wraplist,
-         circle_position,
-         circle
+         floating_a
     }
 }
 pub struct App {
-    circle_pos: conrod::Point,
-    ddl_colors: Vec<String>,
-    /// The currently selected DropDownList color.
-    ddl_color: conrod::Color,
-    border_width: f64,
+    hash: Vec<color::Color>,
 }
 #[derive(Clone)]
 pub enum ConrodMessage {
@@ -54,14 +50,7 @@ fn main() {
     let mut captured_event: Option<ConrodMessage> = None;
     let sixteen_ms = std::time::Duration::from_millis(100);
     let mut app = App {
-        ddl_colors: vec!["Black".to_string(),
-                         "White".to_string(),
-                         "Red".to_string(),
-                         "Green".to_string(),
-                         "Blue".to_string()],
-        ddl_color: conrod::color::PURPLE,
-        circle_pos: [-50.0, 110.0],
-        border_width: 1.0,
+        hash: vec![color::DARK_YELLOW, color::YELLOW, color::DARK_BLUE, color::LIGHT_PURPLE],
     };
 
     'render: loop {
@@ -149,63 +138,10 @@ fn main() {
 
 fn set_widgets(ui: &mut conrod::UiCell, ids: &mut Ids, app: &mut App) {
     widget::Canvas::new().color(color::LIGHT_BLUE).set(ids.master, ui);
-    // Draw an xy_pad.
-    for (x, y) in widget::XYPad::new(app.circle_pos[0], -75.0, 75.0, // x range.
-                                         app.circle_pos[1], 95.0, 245.0) // y range.
-            .w_h(150.0, 150.0)
-            .middle() // Align to the bottom of the last toggle_matrix element.
-            .color(app.ddl_color)
-            .border(app.border_width)
-            .border_color(color::WHITE)
-            .label("Circle Position")
-            .label_color(app.ddl_color.plain_contrast().alpha(0.5))
-            .set(ids.circle_position, ui) {
-        app.circle_pos[0] = x;
-        app.circle_pos[1] = y;
-    }
+    let j = widget::Canvas::new().w_h(50.0, 50.0);
+    DragDropList::new(&mut app.hash, Box::new(move |v| j.color(v)), 50.0)
+        .wh([200.0, 200.0])
+        .middle_of(ids.master)
+        .set(ids.wraplist, ui);
 
-    // Draw a circle at the app's circle_pos.
-    widget::Circle::fill(15.0)
-        .xy_relative_to(ids.circle_position, app.circle_pos)
-        .color(app.ddl_color)
-        .set(ids.circle, ui);
-
-}
-
-//conrod::position::Point
-fn rearrange<T: Clone>(selected_i: usize,
-                       corrected_i: usize,
-                       hash: &mut [Option<([f64; 2], T)>; 25]) {
-    println!("select{}, corrected{}", selected_i, corrected_i);
-    let hash_c = hash.clone();
-    for _i in 0..hash.len() {
-        if _i == corrected_i {
-            hash[_i] = match (&hash_c[selected_i], &hash_c[_i]) {
-                (&Some((_, ref a_s)), &Some((pos, _))) => Some((pos, a_s.clone())),
-                _ => None,
-            };
-        }
-        if selected_i < corrected_i {
-            //moved backward ____S__->__C
-            if (_i < corrected_i) & (_i >= selected_i) {
-                println!("move backward");
-                // ____S~~~~C;
-                hash[_i] = match (&hash_c[_i + 1], &hash_c[_i]) {
-                    (&Some((_, ref a_s)), &Some((pos, _))) => Some((pos, a_s.clone())),
-                    _ => None,
-                };
-            }
-        } else if selected_i > corrected_i {
-            //moved foward _____C__<-S
-            if (_i <= selected_i) & (_i > corrected_i) {
-                println!("move forward");
-                // ____C~~~S
-                hash[_i] = match (&hash_c[_i - 1], &hash_c[_i]) {
-                    (&Some((_, ref a_s)), &Some((pos, _))) => Some((pos, a_s.clone())),
-                    _ => None,
-                };
-            }
-        }
-
-    }
 }
