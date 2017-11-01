@@ -248,7 +248,6 @@ impl<'a, T> Widget for DragDropList<'a, T>
                 if let Some(_v) = value_c.get(_i) {
                     state.update(|state| state.temp.push((None, _v.clone())));
                 }
-
             }
         }
         let mut items = Items {

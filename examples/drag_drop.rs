@@ -3,13 +3,15 @@ extern crate conrod;
 #[macro_use]
 extern crate conrod_derive;
 extern crate cardgame_widgets;
-
+extern crate find_folder;
+extern crate image;
+pub mod support;
 use conrod::{widget, color, Colorable, Widget, Positionable, Sizeable, Labelable};
 use conrod::backend::glium::glium::{self, glutin, Surface};
 use conrod::event;
 
 use cardgame_widgets::custom_widget::dragdrop_list::DragDropList;
-
+use cardgame_widgets::custom_widget::sample_drag_image::Button;
 use std::time::Instant;
 
 widget_ids! {
@@ -39,7 +41,8 @@ fn main() {
     // construct our `Ui`.
     let (screen_w, screen_h) = display.get_framebuffer_dimensions();
     let mut ui = conrod::UiBuilder::new([screen_w as f64, screen_h as f64]).build();
-
+    let rust_logo = load_image(&display, "images/rust.png");
+    let green_logo = load_image(&display, "images.green.png");
     let events_loop_proxy = events_loop.create_proxy();
     let mut ids = Ids::new(ui.widget_id_generator());
     let mut demo_text_edit = "Click here !".to_owned();
@@ -47,6 +50,8 @@ fn main() {
     let mut last_update_sys = std::time::SystemTime::now();
     let mut c = 0;
     let mut image_map: conrod::image::Map<glium::texture::Texture2d> = conrod::image::Map::new();
+    let rust_logo = image_map.insert(rust_logo);
+    let green_logo = image_map.insert(green_logo);
     let mut old_captured_event: Option<ConrodMessage> = None;
     let mut captured_event: Option<ConrodMessage> = None;
     let sixteen_ms = std::time::Duration::from_millis(100);
@@ -109,12 +114,12 @@ fn main() {
                 }
                 old_captured_event = Some(ConrodMessage::Event(d, input.clone()));
                 let mut ui = ui.set_widgets();
-                set_widgets(&mut ui, &mut ids, &mut app);
+                set_widgets(&mut ui, &mut ids, &mut app, rust_logo, green_logo);
 
             }
             Some(ConrodMessage::Thread(t)) => {
                 let mut ui = ui.set_widgets();
-                set_widgets(&mut ui, &mut ids, &mut app);
+                set_widgets(&mut ui, &mut ids, &mut app, rust_logo, green_logo);
             }
             None => {
                 let now = std::time::Instant::now();
@@ -137,10 +142,16 @@ fn main() {
     }
 }
 
-fn set_widgets(ui: &mut conrod::UiCell, ids: &mut Ids, app: &mut App) {
+fn set_widgets(ui: &mut conrod::UiCell,
+               ids: &mut Ids,
+               app: &mut App,
+               rust_logo: image::Id,
+               green_logo: image::Id) {
     widget::Canvas::new().color(color::LIGHT_BLUE).set(ids.master, ui);
-    let j = widget::Canvas::new().w_h(50.0, 50.0);
-    widget::Rectangle::fill([400.0, 400.0])
+    // let j = widget::Canvas::new().w_h(100.0, 300.0);
+
+    let j = Button::image(rust_logo).toggle_image(green_logo);
+    widget::Rectangle::fill([800.0, 4800.0])
         .top_right_of(ids.master)
         .color(color::GREEN)
         .set(ids.exit_id, ui);
@@ -153,4 +164,12 @@ fn set_widgets(ui: &mut conrod::UiCell, ids: &mut Ids, app: &mut App) {
     if let Some(exitable) = exitable {
         println!("exitable {:?}", exitable);
     }
+}
+fn load_image(display: &glium::Display, path: &str) -> glium::texture::Texture2d {
+    let rgba_image = support::assets::load_image(path).to_rgba();
+    let image_dimensions = rgba_image.dimensions();
+    let raw_image = glium::texture::RawImage2d::from_raw_rgba_reversed(&rgba_image.into_raw(),
+                                                                       image_dimensions);
+    let texture = glium::texture::Texture2d::new(display, raw_image).unwrap();
+    texture
 }
