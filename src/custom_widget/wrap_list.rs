@@ -1,4 +1,4 @@
-use conrod::{self, widget, Positionable, Widget, color, Ui, UiCell, graph, Sizeable};
+use conrod::{self, widget, Positionable, Widget, Ui, UiCell, graph};
 
 use std;
 use conrod::position::Scalar;
@@ -59,7 +59,7 @@ impl<'a> Item<'a> {
     /// - dimensions of the widget.
     /// - parent of the widget.
     /// - and finally sets the widget within the `Ui`.
-    pub fn set<W>(mut self, widget: W, width: Scalar, ui: &mut UiCell) -> W::Event
+    pub fn set<W>(self, widget: W, width: Scalar, ui: &mut UiCell) -> W::Event
         where W: Widget
     {
         let Item { total_w, widget_id, last_id, parent_id, .. } = self;
@@ -209,7 +209,7 @@ impl Widget for WrapList {
     /// Update the state of the button by handling any input that has occurred since the last
     /// update.
     fn update(self, args: widget::UpdateArgs<Self>) -> Self::Event {
-        let widget::UpdateArgs { id, state, rect, mut ui, .. } = args;
+        let widget::UpdateArgs { id, state, rect, ui, .. } = args;
         let w = rect.w();
         let item_idx_range = 0..self.num;
         if state.ids.items.len() < self.num {

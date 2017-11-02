@@ -1,4 +1,4 @@
-use conrod::{self, widget, Positionable, Widget, Sizeable, color, text, image};
+use conrod::{self, widget, Positionable, Widget, Sizeable, text, image};
 use sprite::SpriteInfo;
 /// The type upon which we'll implement the `Widget` trait.
 #[derive(WidgetCommon)]
@@ -13,9 +13,6 @@ pub struct BackCardView<'a> {
     pub name: &'a str,
     /// See the Style struct below.
     style: Style,
-    /// Whether the button is currently enabled, i.e. whether it responds to
-    /// user input.
-    enabled: bool,
 }
 
 #[derive(Copy, Clone, Debug, Default, PartialEq, WidgetStyle)]
@@ -60,7 +57,6 @@ impl<'a> BackCardView<'a> {
             name: name,
             common: widget::CommonBuilder::default(),
             style: Style::default(),
-            enabled: true,
         }
     }
 
@@ -94,9 +90,9 @@ impl<'a> Widget for BackCardView<'a> {
     /// Update the state of the button by handling any input that has occurred since the last
     /// update.
     fn update(self, args: widget::UpdateArgs<Self>) -> Self::Event {
-        let widget::UpdateArgs { state, rect, mut ui, .. } = args;
+        let widget::UpdateArgs { state, rect, ui, .. } = args;
 
-        let (x, _, _, h) = rect.x_y_w_h();
+        let (_, _, _, h) = rect.x_y_w_h();
 
         widget::Image::new(self.card_image)
             .source_rectangle(self.card_sprite.src_rect(self.card_index))

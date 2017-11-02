@@ -1,12 +1,11 @@
 //! The `Button` widget and related items.
 
-use conrod::{Color, color, Colorable, FontSize, Borderable, Labelable, Positionable, Sizeable,
-             UiCell, Widget, text, event, input, image, Theme};
-use conrod::position::{self, Align, Rect, Scalar, Dimensions, Point};
+use conrod::{Color, Colorable, Borderable, Positionable, UiCell, Widget, event, input, image, Theme,
+             Sizeable};
+use conrod::position::{self, Rect, Scalar, Dimensions, Point};
 use conrod::widget;
-use conrod::widget::envelope_editor::EnvelopePoint;
 use custom_widget::dragdrop_list::Draggable;
-use std::time::{Duration, Instant};
+
 /// The `Button` displays an `Image` on top.
 #[derive(Copy, Clone)]
 pub struct Image {
@@ -26,8 +25,6 @@ pub struct Button<S> {
     pub show: S,
     /// Unique styling parameters for the Button.
     pub style: Style,
-    /// Whether or not user input is enabled.
-    enabled: bool,
 }
 
 /// Unique styling for the Button.
@@ -83,7 +80,6 @@ impl<S> Button<S> {
             common: widget::CommonBuilder::default(),
             show: show,
             style: Style::default(),
-            enabled: true,
         }
     }
 }
@@ -167,7 +163,7 @@ impl Widget for Button<Image> {
         }
         ()
     }
-    fn drag_area(&self, dim: Dimensions, style: &Style, theme: &Theme) -> Option<Rect> {
+    fn drag_area(&self, dim: Dimensions, style: &Style, _theme: &Theme) -> Option<Rect> {
         if let Some(_) = style.draggable {
             Some(Rect::from_xy_dim([0.0, 0.0], dim))
         } else {
@@ -183,12 +179,7 @@ fn update_drag(button_id: widget::Id, drag: &mut Drag, ui: &UiCell) {
                 match press.button {
                     event::Button::Mouse(input::MouseButton::Left, point) => {
                         match drag {
-                            &mut Drag::Selecting(a, point) => {
-                                /*  if a >=60{
-                                    *drag = Drag::Terminate;
-                                } 
-                                */
-                            }
+                            &mut Drag::Selecting(_, _) => {}
                             &mut Drag::None => {
                                 *drag = Drag::Selecting(0, point);
                             }
@@ -219,7 +210,6 @@ fn update_drag(button_id: widget::Id, drag: &mut Drag, ui: &UiCell) {
             event::Widget::Drag(drag_event) if drag_event.button == input::MouseButton::Left => {
                 match drag {
                     &mut Drag::Selecting(_, ref mut point) => {
-                        let dim = ui.wh_of(button_id).unwrap();
                         *point = drag_event.to;
                     }
                     _ => {}
@@ -266,7 +256,7 @@ fn draw_spinner_op(button_id: widget::Id,
 }
 fn update_toggle_bool_spinner_index(drag: &mut Drag, toggle_bool: &mut bool) -> Option<usize> {
     match drag {
-        &mut Drag::Selecting(ref mut spinner_index, point) => {
+        &mut Drag::Selecting(ref mut spinner_index, _) => {
             if *spinner_index >= 60 {
                 if *toggle_bool {
                     *toggle_bool = false;

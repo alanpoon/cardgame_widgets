@@ -19,9 +19,6 @@ pub struct InstructionView<'a> {
     pub ovaldim: [f64; 2],
     /// See the Style struct below.
     style: Style,
-    /// Whether the button is currently enabled, i.e. whether it responds to
-    /// user input.
-    enabled: bool,
 }
 
 #[derive(Copy, Clone, Debug, Default, PartialEq, WidgetStyle)]
@@ -80,7 +77,6 @@ impl<'a> InstructionView<'a> {
             next: next,
             common: widget::CommonBuilder::default(),
             style: Style::default(),
-            enabled: true,
         }
     }
 
@@ -114,10 +110,9 @@ impl<'a> Widget for InstructionView<'a> {
     /// Update the state of the button by handling any input that has occurred since the last
     /// update.
     fn update(self, args: widget::UpdateArgs<Self>) -> Self::Event {
-        let widget::UpdateArgs { state, rect, mut ui, .. } = args;
+        let widget::UpdateArgs { state, rect, ui, .. } = args;
 
-        let (x, y, w, h) = rect.x_y_w_h();
-        let mut result = false;
+        let (_x, _y, w, h) = rect.x_y_w_h();
         widget::Image::new(self.transparent)
             .w_h(w * 1.2, h * 1.2)
             .middle()
@@ -165,7 +160,7 @@ impl<'a> Widget for InstructionView<'a> {
         }
 
         let _style = self.button_sprite;
-        result = animated_button::AnimatedButton::image(self.button)
+        animated_button::AnimatedButton::image(self.button)
             .label(self.next)
             .normal_rect(_style.src_rect(7.0))
             .hover_rect(_style.src_rect(7.0 + 1.0))
@@ -174,8 +169,6 @@ impl<'a> Widget for InstructionView<'a> {
             .w(100.0)
             .h(70.0)
             .set(state.ids.next, ui)
-            .was_clicked();
-
-        result
+            .was_clicked()
     }
 }

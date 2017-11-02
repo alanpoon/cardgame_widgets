@@ -1,5 +1,4 @@
-use conrod::{self, widget, Positionable, Widget, color, Ui, UiCell, graph, Sizeable, Dimensions,
-             Theme, Rect, Colorable};
+use conrod::{self, widget, Positionable, Widget, Ui, UiCell, Colorable};
 use std;
 use conrod::position::Scalar;
 use std::fmt::Debug;
@@ -44,7 +43,6 @@ pub struct State<T> {
     ids: Ids,
     temp: Vec<(Option<widget::Id>, T)>,
     last_release: Option<std::time::Instant>,
-    acc_w: f64,
     mouse_point: Option<(usize, conrod::position::Point)>,
 }
 /// The data necessary for instantiating a single item within a `List`.
@@ -67,7 +65,7 @@ impl<'a> Item<'a> {
     /// - dimensions of the widget.
     /// - parent of the widget.
     /// - and finally sets the widget within the `Ui`.
-    pub fn set<W>(mut self, widget: W, width: Scalar, ui: &mut UiCell) -> widget::Id
+    pub fn set<W>(self, widget: W, width: Scalar, ui: &mut UiCell) -> widget::Id
         where W: Widget
     {
         let Item { total_w, widget_id, last_id, parent_id, .. } = self;
@@ -135,7 +133,7 @@ pub struct Items {
 
 impl Items {
     /// Yield the next `Item` in the list.
-    pub fn next<T>(&mut self, state: &State<T>, ui: &Ui) -> Option<Item>
+    pub fn next<T>(&mut self, state: &State<T>, _ui: &Ui) -> Option<Item>
         where T: Clone + Send + 'static + Debug
     {
 
@@ -219,7 +217,6 @@ impl<'a, T, W> Widget for DragDropList<'a, T, W>
             ids: Ids::new(id_gen),
             temp: vec![],
             last_release: Some(now),
-            acc_w: 0.0,
             mouse_point: None,
         }
     }
@@ -231,7 +228,7 @@ impl<'a, T, W> Widget for DragDropList<'a, T, W>
     /// Update the state of the button by handling any input that has occurred since the last
     /// update.
     fn update(self, args: widget::UpdateArgs<Self>) -> Self::Event {
-        let widget::UpdateArgs { id, state, rect, mut ui, style, .. } = args;
+        let widget::UpdateArgs { id, state, rect, ui, style, .. } = args;
         let w = rect.w();
         let h = rect.h();
         let item_idx_range = 0..self.values.len();
@@ -283,7 +280,7 @@ impl<'a, T, W> Widget for DragDropList<'a, T, W>
             while let (Some(item), Some(k_h)) =
                 (items.next::<T>(&state, ui), values_c_iter.next()) {
                 let widget = (*self.widget_closure)(k_h.clone());
-                let k = item.set(widget.draggable(true), self.item_width, ui);
+                item.set(widget.draggable(true), self.item_width, ui);
                 c += 1;
             }
         }

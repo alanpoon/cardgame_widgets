@@ -1,5 +1,4 @@
-use conrod::{self, widget, Colorable, Positionable, Widget, Sizeable, color, text, Labelable};
-use std::collections::HashMap;
+use conrod::{self, widget, Positionable, Widget, Sizeable, Labelable};
 use custom_widget::pad_text_button;
 
 pub trait TableListTexts {
@@ -27,9 +26,6 @@ pub struct TableList<'a, T: TableListTexts + 'a> {
     pub joined: bool,
     /// See the Style struct below.
     style: Style,
-    /// Whether the button is currently enabled, i.e. whether it responds to
-    /// user input.
-    enabled: bool,
 }
 
 #[derive(Copy, Clone, Debug, Default, PartialEq, WidgetStyle)]
@@ -88,7 +84,6 @@ impl<'a, T> TableList<'a, T>
             max_space: max_space,
             common: widget::CommonBuilder::default(),
             style: Style::default(),
-            enabled: true,
             joined: joined,
         }
     }
@@ -125,8 +120,8 @@ impl<'a, T> Widget for TableList<'a, T>
     /// Update the state of the button by handling any input that has occurred since the last
     /// update.
     fn update(self, args: widget::UpdateArgs<Self>) -> Self::Event {
-        let widget::UpdateArgs { id, state, rect, mut ui, style, .. } = args;
-        let (x, y, w, h) = rect.x_y_w_h();
+        let widget::UpdateArgs { id, state, rect, ui, .. } = args;
+        let (_x, y, w, h) = rect.x_y_w_h();
         let pad = 0.01 * w;
         widget::Rectangle::outline([w, h]).top_left_of(id).set(state.ids.rect, ui);
         if self.joined {
@@ -136,7 +131,7 @@ impl<'a, T> Widget for TableList<'a, T>
                 .h(0.4 * h)
                 .top_left_with_margins_on(id, 0.01 * h, 0.01 * w)
                 .set(state.ids.ready_join, ui);
-            for i in r_but {
+            for _ in r_but {
                 (*self.ready)();
             }
             let l_but = widget::Button::new()
@@ -145,7 +140,7 @@ impl<'a, T> Widget for TableList<'a, T>
                 .h(0.4 * h)
                 .down_from(state.ids.ready_join, 2.0)
                 .set(state.ids.leave, ui);
-            for i in l_but {
+            for _ in l_but {
                 (*self.leave)();
             }
         } else {
@@ -155,7 +150,7 @@ impl<'a, T> Widget for TableList<'a, T>
                 .h(0.4 * h)
                 .top_left_with_margins_on(id, 0.01 * h, 0.01 * w)
                 .set(state.ids.ready_join, ui);
-            for i in r_but {
+            for _ in r_but {
                 (*self.join)();
             }
         }
@@ -168,7 +163,6 @@ impl<'a, T> Widget for TableList<'a, T>
             .right_from(state.ids.ready_join, 2.0)
             .set(state.ids.table_space, ui);
         let mut players_string = "".to_owned();
-        let mut itr = self.players.iter();
         let num = self.players.len();
         let play_c = self.players.clone();
         let mut a = 0;
@@ -178,6 +172,7 @@ impl<'a, T> Widget for TableList<'a, T>
                 let k = ",".to_owned();
                 players_string.push_str(&k);
             }
+            a += 1;
         }
         widget::Text::new(&players_string)
             .w((w - (2.0 * pad)) / 3.0)
@@ -212,7 +207,7 @@ impl<'a, T> Widget for TableList<'a, T>
                             .w_h(change_table_space_but_w, 0.8 * h)
                             .set(sym, ui);
 
-                        for i in but {
+                        for _i in but {
                             (*self.change_table_space_closure)(iplay);
                         }
                     } else {
@@ -236,7 +231,7 @@ impl<'a, T> Widget for TableList<'a, T>
                         .w_h(change_table_space_but_w, 0.8 * h)
                         .set(sym, ui);
 
-                    for i in but {
+                    for _i in but {
                         (*self.change_table_space_closure)(iplay + 1);
                     }
                     iplay += 1;

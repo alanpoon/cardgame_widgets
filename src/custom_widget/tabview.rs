@@ -174,7 +174,7 @@ impl<'a> Widget for TabView<'a> {
     /// Update the state of the button by handling any input that has occurred since the last
     /// update.
     fn update(self, args: widget::UpdateArgs<Self>) -> Option<(Items)> {
-        let widget::UpdateArgs { rect, id, state, mut ui, .. } = args;
+        let widget::UpdateArgs { rect, id, state, ui, .. } = args;
         // Finally, we'll describe how we want our widget drawn by simply instantiating the
         // necessary primitive graphics widgets.
         //

@@ -13,9 +13,6 @@ pub struct PromptView<'a> {
     pub prompt: (f64, &'a str), //width%,text
     /// See the Style struct below.
     style: Style,
-    /// Whether the button is currently enabled, i.e. whether it responds to
-    /// user input.
-    enabled: bool,
 }
 
 #[derive(Copy, Clone, Debug, Default, PartialEq, WidgetStyle)]
@@ -57,7 +54,6 @@ impl<'a> PromptView<'a> {
             buttons_sprite_label: buttons_sprite_label,
             common: widget::CommonBuilder::default(),
             style: Style::default(),
-            enabled: true,
         }
     }
 
@@ -91,9 +87,9 @@ impl<'a> Widget for PromptView<'a> {
     /// Update the state of the button by handling any input that has occurred since the last
     /// update.
     fn update(self, args: widget::UpdateArgs<Self>) -> Self::Event {
-        let widget::UpdateArgs { id, state, rect, mut ui, .. } = args;
+        let widget::UpdateArgs { id, state, rect, ui, .. } = args;
         let num = self.buttons_sprite_label.len();
-        let (x, y, w, h) = rect.x_y_w_h();
+        let (_x, _y, w, h) = rect.x_y_w_h();
         let mut f1 = 16;
         let mut l1 = 2.0;
 

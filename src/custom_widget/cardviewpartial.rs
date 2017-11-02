@@ -1,6 +1,6 @@
 use conrod::{self, widget, Positionable, Widget, image, Sizeable};
 use sprite::SpriteInfo;
-use custom_widget::animated_button::AnimatedButton;
+
 /// The type upon which we'll implement the `Widget` trait.
 #[derive(WidgetCommon)]
 pub struct CardViewPartial<'a> {
@@ -15,9 +15,6 @@ pub struct CardViewPartial<'a> {
     pub name: &'a str,
     /// See the Style struct below.
     style: Style,
-    /// Whether the button is currently enabled, i.e. whether it responds to
-    /// user input.
-    enabled: bool,
 }
 
 #[derive(Copy, Clone, Debug, Default, PartialEq, WidgetStyle)]
@@ -62,7 +59,6 @@ impl<'a> CardViewPartial<'a> {
             name: name,
             common: widget::CommonBuilder::default(),
             style: Style::default(),
-            enabled: true,
         }
     }
 
@@ -96,13 +92,13 @@ impl<'a> Widget for CardViewPartial<'a> {
     /// Update the state of the button by handling any input that has occurred since the last
     /// update.
     fn update(self, args: widget::UpdateArgs<Self>) -> Self::Event {
-        let widget::UpdateArgs { id, state, rect, mut ui, .. } = args;
-        let (interaction, times_triggered) = interaction_and_times_triggered(id, ui);
+        let widget::UpdateArgs { id, state, rect, ui, .. } = args;
+        let (interaction, _times_triggered) = interaction_and_times_triggered(id, ui);
 
         // Finally, we'll describe how we want our widget drawn by simply instantiating the
         // necessary primitive graphics widgets.
         //
-        let (x, y, w, h) = rect.x_y_w_h();
+        let (_, _, w, h) = rect.x_y_w_h();
         let wh_rect = match interaction {
             Interaction::Idle => (w, h),
             Interaction::Hover => (1.5 * w, 1.5 * h),

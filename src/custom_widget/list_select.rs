@@ -104,7 +104,7 @@ impl<'a> Widget for ListSelect<'a> {
     /// Update the state of the button by handling any input that has occurred since the last
     /// update.
     fn update(self, args: widget::UpdateArgs<Self>) -> Self::Event {
-        let widget::UpdateArgs { id, state, rect, mut ui, style, .. } = args;
+        let widget::UpdateArgs { id, state, rect, ui, style, .. } = args;
         let num = self.image_ids.len();
         if state.ids.symbols.len() < num {
             let id_gen = &mut ui.widget_id_generator();
