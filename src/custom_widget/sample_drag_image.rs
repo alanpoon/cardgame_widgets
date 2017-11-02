@@ -2,17 +2,20 @@
 
 use conrod::{Color, color, Colorable, FontSize, Borderable, Labelable, Positionable, Sizeable,
              UiCell, Widget, text, event, input, image, Theme};
-use conrod::position::{self, Align, Rect, Scalar, Dimensions};
+use conrod::position::{self, Align, Rect, Scalar, Dimensions, Point};
 use conrod::widget;
 use conrod::widget::envelope_editor::EnvelopePoint;
+use custom_widget::dragdrop_list::Draggable;
 use std::time::{Duration, Instant};
 /// The `Button` displays an `Image` on top.
 #[derive(Copy, Clone)]
 pub struct Image {
     /// The id of the `Image` to be used.
     pub image_id: image::Id,
-    /// The image displayed when the mouse hovers over the button.
+    /// The image displayed when the button is held for 4 seconds.
     pub toggle_image_id: Option<image::Id>,
+    /// The image overlay on the mouse while is held for more than 2 seconds
+    pub spinner_image_id: Option<image::Id>,
 }
 /// A pressable button widget whose reaction is triggered upon release.
 #[derive(WidgetCommon)]
@@ -39,6 +42,9 @@ pub struct Style {
     /// The color of the border.
     #[conrod(default = "theme.border_color")]
     pub border_color: Option<Color>,
+    /// Dragable
+    #[conrod(default="false")]
+    pub draggable: Option<bool>,
 }
 
 /// The State of the Button widget that will be cached within the Ui.
@@ -46,12 +52,13 @@ pub struct ImageState {
     /// Track whether some sort of dragging is currently occurring.
     drag: Drag,
     ids: ImageIds,
+    toggle_bool: bool,
 }
 /// Track whether some sort of dragging is currently occurring.
 #[derive(Copy, Clone, Debug, PartialEq)]
 pub enum Drag {
     /// The drag is currently selecting a range of text.
-    Selecting(Instant),
+    Selecting(usize, Point),
     None,
     Terminate,
 }
@@ -62,44 +69,13 @@ widget_ids! {
     pub struct ImageIds {
         image,
         label,
-        rectangle
+        rectangle,
+        spinner
     }
 }
 
-#[derive(Copy, Clone,Debug)]
-pub enum Interaction {
-    Idle,
-    Hover,
-    Press,
-    Hold,
-}
-
-/// The `Event` type yielded by the `Button` widget.
-///
-/// Represents the number of times that the `Button` has been clicked with the left mouse button
-/// since the last update.
-#[derive(Clone, Debug)]
-#[allow(missing_copy_implementations)]
-pub struct TimesClicked(pub Interaction);
 
 
-impl TimesClicked {
-    /// `true` if the `Button` was clicked one or more times.
-    pub fn was_clicked(self) -> bool {
-        if let Interaction::Press = self.0 {
-            true
-        } else {
-            false
-        }
-    }
-    pub fn was_hold(self) -> bool {
-        if let Interaction::Hold = self.0 {
-            true
-        } else {
-            false
-        }
-    }
-}
 impl<S> Button<S> {
     /// Create a button context to be built upon.
     fn new_internal(show: S) -> Self {
@@ -117,23 +93,30 @@ impl Button<Image> {
         let image = Image {
             image_id: img,
             toggle_image_id: None,
+            spinner_image_id: None,
         };
         Self::new_internal(image)
     }
-    /// The image displayed while the mouse hovers over the `Button`.
+    /// The image displayed when the button is held for 4 seconds.
     pub fn toggle_image(mut self, id: image::Id) -> Self {
         self.show.toggle_image_id = Some(id);
+        self
+    }
+    /// The spinner image overlay displayed when the button is held for 2 seconds.
+    pub fn spinner_image(mut self, id: image::Id) -> Self {
+        self.show.spinner_image_id = Some(id);
         self
     }
 }
 impl Widget for Button<Image> {
     type State = ImageState;
     type Style = Style;
-    type Event = TimesClicked;
+    type Event = ();
 
     fn init_state(&self, id_gen: widget::id::Generator) -> Self::State {
         ImageState {
             drag: Drag::None,
+            toggle_bool: false,
             ids: ImageIds::new(id_gen),
         }
     }
@@ -147,17 +130,25 @@ impl Widget for Button<Image> {
         let widget::UpdateArgs { id, state, style, rect, ui, .. } = args;
         let Button { show, .. } = self;
         let mut drag = state.drag;
-        let interaction = interaction_and_times_triggered(id, &mut drag, ui);
-        let color = color_from_interaction(style.color(&ui.theme), interaction, &mut drag);
-        bordered_rectangle(id, state.ids.rectangle, rect, color, style, ui);
-        match interaction {
-            Interaction::Hover => {
-                //  println!("hovering id:{:?}", id);
-            }
-            _ => {}
-        }
+        let mut toggle_bool = state.toggle_bool;
+        update_drag(id, &mut drag, ui);
+        bordered_rectangle(id,
+                           state.ids.rectangle,
+                           rect,
+                           style.color(&ui.theme),
+                           style,
+                           ui);
+        let draw_spinner_index = update_toggle_bool_spinner_index(&mut drag, &mut toggle_bool);
+        state.update(|state| {
+                         state.drag = drag;
+                         state.toggle_bool = toggle_bool
+                     });
         // Instantiate the image.
-        let widget_image = show.image_id;
+        let widget_image = if toggle_bool {
+            show.toggle_image_id.unwrap()
+        } else {
+            show.image_id
+        };
         let (x, y, w, h) = rect.x_y_w_h();
         let image = widget::Image::new(widget_image)
             .x_y(x, y)
@@ -167,48 +158,39 @@ impl Widget for Button<Image> {
             .graphics_for(id);
 
         image.set(state.ids.image, ui);
-        TimesClicked(interaction)
+        if let Some(spinner_index) = draw_spinner_index {
+            draw_spinner_op(id,
+                            state.ids.spinner,
+                            show.spinner_image_id,
+                            spinner_index,
+                            ui);
+        }
+        ()
     }
     fn drag_area(&self, dim: Dimensions, style: &Style, theme: &Theme) -> Option<Rect> {
-        Some(Rect::from_xy_dim([0.0, 0.0], dim))
-    }
-}
-
-fn color_from_interaction(color: Color, interaction: Interaction, drag: &mut Drag) -> Color {
-    match drag {
-        &mut Drag::Selecting(_) => color.highlighted(),
-        _ => {
-            match interaction {
-                Interaction::Idle => color,
-                Interaction::Hover => color.highlighted(),
-                Interaction::Press => color.clicked(),
-                Interaction::Hold => color.highlighted(),
-            }
+        if let Some(_) = style.draggable {
+            Some(Rect::from_xy_dim([0.0, 0.0], dim))
+        } else {
+            None
         }
     }
-
 }
 
-fn interaction_and_times_triggered(button_id: widget::Id,
-                                   drag: &mut Drag,
-                                   ui: &UiCell)
-                                   -> Interaction {
-    let mut interaction = Interaction::Idle;
+fn update_drag(button_id: widget::Id, drag: &mut Drag, ui: &UiCell) {
     for widget_event in ui.widget_input(button_id).events() {
         match widget_event {
             event::Widget::Press(press) => {
                 match press.button {
-                    event::Button::Mouse(input::MouseButton::Left, _) => {
-                        let now = Instant::now();
+                    event::Button::Mouse(input::MouseButton::Left, point) => {
                         match drag {
-                            &mut Drag::Selecting(a) => {
-                                if a.elapsed() >= Duration::from_secs(1) {
-                                    interaction = Interaction::Hold;
+                            &mut Drag::Selecting(a, point) => {
+                                /*  if a >=60{
                                     *drag = Drag::Terminate;
-                                }
+                                } 
+                                */
                             }
                             &mut Drag::None => {
-                                *drag = Drag::Selecting(now);
+                                *drag = Drag::Selecting(0, point);
                             }
                             &mut Drag::Terminate => {}
                         }
@@ -221,21 +203,14 @@ fn interaction_and_times_triggered(button_id: widget::Id,
                     (event::Click { button: input::MouseButton::Left, .. }, Drag::Terminate) => {
                         *drag = Drag::None;
                     }
-                    _ => {
-                        interaction = Interaction::Press;
-                    }
+                    _ => {}
                 }
             }
             event::Widget::Release(release) => {
                 if let event::Button::Mouse(input::MouseButton::Left, _) = release.button {
                     match drag {
-                        &mut Drag::Selecting(a) => {
-                            if a.elapsed() >= Duration::from_secs(1) {
-                                *drag = Drag::Terminate;
-                            } else {
-                                *drag = Drag::None;
-                            }
-                            interaction = Interaction::Press;
+                        &mut Drag::Selecting(_, _) => {
+                            *drag = Drag::Terminate;
                         }
                         _ => {}
                     }
@@ -243,28 +218,17 @@ fn interaction_and_times_triggered(button_id: widget::Id,
             }
             event::Widget::Drag(drag_event) if drag_event.button == input::MouseButton::Left => {
                 match drag {
-                    &mut Drag::Selecting(_) => {
+                    &mut Drag::Selecting(_, ref mut point) => {
                         let dim = ui.wh_of(button_id).unwrap();
-                        if (drag_event.to.get_x().abs() > dim[0]) ||
-                           (drag_event.to.get_y().abs() > dim[1]) {
-                            *drag = Drag::None;
-                            interaction = Interaction::Idle;
-                        }
+                        *point = drag_event.to;
                     }
                     _ => {}
                 }
             }
-            /*   event::Widget::Click(click)=>match click.button{
-                    interaction = Interaction::Press;
-                },*/
-            _ => {
-                if let Drag::None = *drag {
-                    interaction = Interaction::Hover;
-                }
-            }
+            _ => if let Drag::None = *drag {},
         }
     }
-    interaction
+
 }
 
 fn bordered_rectangle(button_id: widget::Id,
@@ -286,6 +250,41 @@ fn bordered_rectangle(button_id: widget::Id,
         .set(rectangle_id, ui);
 }
 
+fn draw_spinner_op(button_id: widget::Id,
+                   spinner_id: widget::Id,
+                   spinner_image: Option<image::Id>,
+                   spinner_index: usize,
+                   ui: &mut UiCell) {
+    if let Some(spinner_image) = spinner_image {
+        widget::Image::new(spinner_image)
+            .source_rectangle(get_spriteinfo().src_rect(spinner_index as f64))
+            .w_h(40.0, 40.0)
+            .middle_of(button_id)
+            .set(spinner_id, ui);
+    }
+
+}
+fn update_toggle_bool_spinner_index(drag: &mut Drag, toggle_bool: &mut bool) -> Option<usize> {
+    match drag {
+        &mut Drag::Selecting(ref mut spinner_index, point) => {
+            if *spinner_index >= 60 {
+                if *toggle_bool {
+                    *toggle_bool = false;
+                } else {
+                    *toggle_bool = true;
+                }
+
+                *spinner_index = 0;
+                None
+            } else {
+
+                *spinner_index += 1;
+                Some(spinner_index.clone())
+            }
+        }
+        _ => None,
+    }
+}
 impl<S> Colorable for Button<S> {
     builder_method!(color { style.color = Some(Color) });
 }
@@ -294,5 +293,37 @@ impl<S> Borderable for Button<S> {
     builder_methods!{
         border { style.border = Some(Scalar) }
         border_color { style.border_color = Some(Color) }
+    }
+}
+impl<S> Draggable for Button<S> {
+    builder_methods!{
+        draggable { style.draggable = Some(bool) }
+    }
+}
+
+#[derive(Clone,Copy,PartialEq,Debug)]
+pub struct SpriteInfo {
+    pub first: (f64, f64), //left corner of first
+    pub num_in_row: f64,
+    pub w_h: (f64, f64),
+    pub pad: (f64, f64, f64, f64),
+}
+pub fn get_spriteinfo() -> SpriteInfo {
+    SpriteInfo {
+        first: (0.0, 206.0),
+        num_in_row: 12.0,
+        w_h: (51.8333, 51.5),
+        pad: (0.0, 0.0, 0.0, 0.0),
+    }
+}
+impl SpriteInfo {
+    pub fn src_rect(&self, index: f64) -> Rect {
+        let s = self;
+        let (x, y) = (index % s.num_in_row as f64, (index / (s.num_in_row)).floor());
+        let r = position::rect::Rect::from_corners([s.first.0 + x * s.w_h.0 + s.pad.0,
+                                                    s.first.1 - y * s.w_h.1 - s.pad.2],
+                                                   [s.first.0 + (x + 1.0) * s.w_h.0 - s.pad.1,
+                                                    s.first.1 - (y + 1.0) * s.w_h.1 + s.pad.3]);
+        r
     }
 }

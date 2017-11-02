@@ -2,13 +2,16 @@ use conrod::{self, widget, Positionable, Widget, color, Ui, UiCell, graph, Sizea
              Theme, Rect, Colorable};
 use std;
 use conrod::position::Scalar;
-use conrod::widget::Canvas;
 use std::fmt::Debug;
 use std::marker::Send;
+pub trait Draggable {
+    fn draggable(self, bool) -> Self;
+}
 /// The type upon which we'll implement the `Widget` trait.
 #[derive(WidgetCommon)]
-pub struct DragDropList<'a, T>
-    where T: Clone + Send + 'a + Debug
+pub struct DragDropList<'a, T, W>
+    where T: Clone + Send + 'a + Debug,
+          W: Widget + Draggable
 {
     /// An object that handles some of the dirty work of rendering a GUI. We don't
     /// really have to worry about it.
@@ -17,7 +20,7 @@ pub struct DragDropList<'a, T>
     /// See the Style struct below.
     style: Style,
     values: &'a mut Vec<T>,
-    widget_closure: Box<Fn(T) -> Canvas<'a>>,
+    widget_closure: Box<Fn(T) -> W>,
     item_width: f64,
 }
 
@@ -176,14 +179,12 @@ impl Items {
     }
 }
 
-impl<'a, T> DragDropList<'a, T>
-    where T: Clone + Send + 'a + Debug
+impl<'a, T, W> DragDropList<'a, T, W>
+    where T: Clone + Send + 'a + Debug,
+          W: Widget + Draggable
 {
     /// Create a button context to be built upon.
-    pub fn new(values: &'a mut Vec<T>,
-               widget_closure: Box<Fn(T) -> Canvas<'a>>,
-               item_width: f64)
-               -> Self {
+    pub fn new(values: &'a mut Vec<T>, widget_closure: Box<Fn(T) -> W>, item_width: f64) -> Self {
         DragDropList {
             common: widget::CommonBuilder::default(),
             style: Style::default(),
@@ -199,8 +200,9 @@ impl<'a, T> DragDropList<'a, T>
 
 /// A custom Conrod widget must implement the Widget trait. See the **Widget** trait
 /// documentation for more details.
-impl<'a, T> Widget for DragDropList<'a, T>
-    where T: Clone + Send + 'a + 'static + Debug
+impl<'a, T, W> Widget for DragDropList<'a, T, W>
+    where T: Clone + Send + 'a + 'static + Debug,
+          W: Widget + Draggable
 {
     /// The State struct that we defined above.
     type State = State<T>;
@@ -281,7 +283,7 @@ impl<'a, T> Widget for DragDropList<'a, T>
             while let (Some(item), Some(k_h)) =
                 (items.next::<T>(&state, ui), values_c_iter.next()) {
                 let widget = (*self.widget_closure)(k_h.clone());
-                let k = item.set(widget.title_bar("Blue"), self.item_width, ui);
+                let k = item.set(widget.draggable(true), self.item_width, ui);
                 c += 1;
             }
         }
@@ -359,8 +361,9 @@ impl<'a, T> Widget for DragDropList<'a, T>
         exit_id
     }
 }
-impl<'a, T> Colorable for DragDropList<'a, T>
-    where T: Clone + Send + 'a + 'static + Debug
+impl<'a, T, W> Colorable for DragDropList<'a, T, W>
+    where T: Clone + Send + 'a + 'static + Debug,
+          W: Widget + Draggable
 {
     fn color(mut self, color: conrod::Color) -> Self {
         self.style.color = Some(color);

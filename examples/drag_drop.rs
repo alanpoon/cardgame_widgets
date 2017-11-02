@@ -42,16 +42,17 @@ fn main() {
     let (screen_w, screen_h) = display.get_framebuffer_dimensions();
     let mut ui = conrod::UiBuilder::new([screen_w as f64, screen_h as f64]).build();
     let rust_logo = load_image(&display, "images/rust.png");
-    let green_logo = load_image(&display, "images.green.png");
+    let green_logo = load_image(&display, "images/green.png");
+    let spinner_logo = load_image(&display, "images/download2.png");
     let events_loop_proxy = events_loop.create_proxy();
     let mut ids = Ids::new(ui.widget_id_generator());
     let mut demo_text_edit = "Click here !".to_owned();
     let mut last_update = std::time::Instant::now();
-    let mut last_update_sys = std::time::SystemTime::now();
     let mut c = 0;
     let mut image_map: conrod::image::Map<glium::texture::Texture2d> = conrod::image::Map::new();
     let rust_logo = image_map.insert(rust_logo);
     let green_logo = image_map.insert(green_logo);
+    let spinner_logo = image_map.insert(spinner_logo);
     let mut old_captured_event: Option<ConrodMessage> = None;
     let mut captured_event: Option<ConrodMessage> = None;
     let sixteen_ms = std::time::Duration::from_millis(100);
@@ -114,12 +115,22 @@ fn main() {
                 }
                 old_captured_event = Some(ConrodMessage::Event(d, input.clone()));
                 let mut ui = ui.set_widgets();
-                set_widgets(&mut ui, &mut ids, &mut app, rust_logo, green_logo);
+                set_widgets(&mut ui,
+                            &mut ids,
+                            &mut app,
+                            rust_logo,
+                            green_logo,
+                            spinner_logo);
 
             }
             Some(ConrodMessage::Thread(t)) => {
                 let mut ui = ui.set_widgets();
-                set_widgets(&mut ui, &mut ids, &mut app, rust_logo, green_logo);
+                set_widgets(&mut ui,
+                            &mut ids,
+                            &mut app,
+                            rust_logo,
+                            green_logo,
+                            spinner_logo);
             }
             None => {
                 let now = std::time::Instant::now();
@@ -145,22 +156,30 @@ fn main() {
 fn set_widgets(ui: &mut conrod::UiCell,
                ids: &mut Ids,
                app: &mut App,
-               rust_logo: image::Id,
-               green_logo: image::Id) {
+               rust_logo: conrod::image::Id,
+               green_logo: conrod::image::Id,
+               spinner_logo: conrod::image::Id) {
     widget::Canvas::new().color(color::LIGHT_BLUE).set(ids.master, ui);
     // let j = widget::Canvas::new().w_h(100.0, 300.0);
-
-    let j = Button::image(rust_logo).toggle_image(green_logo);
-    widget::Rectangle::fill([800.0, 4800.0])
+    widget::Rectangle::fill([200.0, 200.0])
         .top_right_of(ids.master)
         .color(color::GREEN)
         .set(ids.exit_id, ui);
-    let exitable = DragDropList::new(&mut app.hash, Box::new(move |v| j.color(v)), 50.0)
-        .wh([200.0, 200.0])
-        .color(color::RED)
-        .exit_id(Some(Some(ids.exit_id)))
-        .middle_of(ids.master)
-        .set(ids.wraplist, ui);
+
+    let exitable = DragDropList::new(&mut app.hash,
+                                     Box::new(move |v| {
+        let j = Button::image(rust_logo.clone())
+            .toggle_image(green_logo.clone())
+            .spinner_image(spinner_logo.clone())
+            .w_h(100.0, 300.0);
+        j.color(v)
+    }),
+                                     50.0)
+            .wh([400.0, 400.0])
+            .color(color::RED)
+            .exit_id(Some(Some(ids.exit_id)))
+            .middle_of(ids.master)
+            .set(ids.wraplist, ui);
     if let Some(exitable) = exitable {
         println!("exitable {:?}", exitable);
     }
