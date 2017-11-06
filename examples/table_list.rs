@@ -10,20 +10,46 @@ use conrod::{widget, color, Colorable, Widget, Positionable, Sizeable, Labelable
 use conrod::backend::glium::glium::{self, glutin, Surface};
 use conrod::event;
 
-use cardgame_widgets::custom_widget::dragdrop_list::DragDropList;
-use cardgame_widgets::custom_widget::sample_drag_image::Button;
+use cardgame_widgets::custom_widget::table_list::{TableList, TableListTexts};
+use cardgame_widgets::custom_widget::pad_text_button::Button;
 use std::time::Instant;
 
 widget_ids! {
     pub struct Ids {
          master,
-         wraplist,
-         floating_a,
-         exit_id
+         tablelist,
     }
 }
-pub struct App {
-    hash: Vec<color::Color>,
+pub struct Local {
+    ready: &'static str,
+    leave: &'static str,
+    join: &'static str,
+    playergame: &'static str,
+    changeto: &'static str,
+}
+pub struct AppData {
+    texts: Local,
+}
+
+pub struct TableListTex<'a> {
+    appdata: &'a AppData,
+}
+impl<'a> TableListTexts for TableListTex<'a> {
+    fn text_ready(&self) -> &'static str {
+        self.appdata.texts.ready
+    }
+    fn text_leave(&self) -> &'static str {
+        self.appdata.texts.leave
+    }
+    fn text_join(&self) -> &'static str {
+        self.appdata.texts.join
+    }
+    fn text_playergame(&self) -> &'static str {
+        self.appdata.texts.playergame
+    }
+    fn text_changeto(&self) -> &'static str {
+        self.appdata.texts.changeto
+    }
 }
 #[derive(Clone)]
 pub enum ConrodMessage {
@@ -41,26 +67,26 @@ fn main() {
     // construct our `Ui`.
     let (screen_w, screen_h) = display.get_framebuffer_dimensions();
     let mut ui = conrod::UiBuilder::new([screen_w as f64, screen_h as f64]).build();
-
-    let rust_logo = load_image(&display, "images/rust.png");
-    let green_logo = load_image(&display, "images/green.png");
-    let spinner_logo = load_image(&display, "images/download2.png");
+    ui.fonts.insert(support::assets::load_font("fonts/NotoSans/NotoSans-Regular.ttf"));
     let events_loop_proxy = events_loop.create_proxy();
     let mut ids = Ids::new(ui.widget_id_generator());
     let mut demo_text_edit = "Click here !".to_owned();
     let mut last_update = std::time::Instant::now();
     let mut c = 0;
     let mut image_map: conrod::image::Map<glium::texture::Texture2d> = conrod::image::Map::new();
-    let rust_logo = image_map.insert(rust_logo);
-    let green_logo = image_map.insert(green_logo);
-    let spinner_logo = image_map.insert(spinner_logo);
     let mut old_captured_event: Option<ConrodMessage> = None;
     let mut captured_event: Option<ConrodMessage> = None;
-    let sixteen_ms = std::time::Duration::from_millis(1000);
-    let mut app = App {
-        hash: vec![color::DARK_YELLOW, color::YELLOW, color::DARK_BLUE, color::LIGHT_PURPLE],
+    let sixteen_ms = std::time::Duration::from_millis(100);
+    let mut app = AppData {
+        texts: Local {
+            ready: "ready",
+            leave: "leave",
+            join: "join",
+            playergame: "playergame",
+            changeto: "changeto",
+        },
     };
-
+    let table = vec!["alan".to_owned()];
     'render: loop {
         let mut to_break = false;
         let mut to_continue = false;
@@ -116,22 +142,12 @@ fn main() {
                 }
                 old_captured_event = Some(ConrodMessage::Event(d, input.clone()));
                 let mut ui = ui.set_widgets();
-                set_widgets(&mut ui,
-                            &mut ids,
-                            &mut app,
-                            rust_logo,
-                            green_logo,
-                            spinner_logo);
+                set_widgets(&mut ui, &mut ids, &app, &table);
 
             }
             Some(ConrodMessage::Thread(t)) => {
                 let mut ui = ui.set_widgets();
-                set_widgets(&mut ui,
-                            &mut ids,
-                            &mut app,
-                            rust_logo,
-                            green_logo,
-                            spinner_logo);
+                set_widgets(&mut ui, &mut ids, &app, &table);
             }
             None => {
                 let now = std::time::Instant::now();
@@ -154,42 +170,33 @@ fn main() {
     }
 }
 
-fn set_widgets(ui: &mut conrod::UiCell,
-               ids: &mut Ids,
-               app: &mut App,
-               rust_logo: conrod::image::Id,
-               green_logo: conrod::image::Id,
-               spinner_logo: conrod::image::Id) {
+fn set_widgets(ui: &mut conrod::UiCell, ids: &mut Ids, app: &AppData, table: &Vec<String>) {
     widget::Canvas::new().color(color::LIGHT_BLUE).set(ids.master, ui);
-    // let j = widget::Canvas::new().w_h(100.0, 300.0);
-    widget::Rectangle::fill([200.0, 200.0])
-        .top_right_of(ids.master)
-        .color(color::GREEN)
-        .set(ids.exit_id, ui);
-
-    let exitable = DragDropList::new(&mut app.hash,
-                                     Box::new(move |v| {
-        let j = Button::image(rust_logo.clone())
-            .toggle_image(green_logo.clone())
-            .spinner_image(spinner_logo.clone())
-            .w_h(100.0, 300.0);
-        j.color(v)
-    }),
-                                     50.0)
-            .wh([400.0, 400.0])
-            .color(color::RED)
-            .exit_id(Some(Some(ids.exit_id)))
-            .middle_of(ids.master)
-            .set(ids.wraplist, ui);
-    if let Some(exitable) = exitable {
-        println!("exitable {:?}", exitable);
-    }
-}
-fn load_image(display: &glium::Display, path: &str) -> glium::texture::Texture2d {
-    let rgba_image = support::assets::load_image(path).to_rgba();
-    let image_dimensions = rgba_image.dimensions();
-    let raw_image = glium::texture::RawImage2d::from_raw_rgba_reversed(&rgba_image.into_raw(),
-                                                                       image_dimensions);
-    let texture = glium::texture::Texture2d::new(display, raw_image).unwrap();
-    texture
+    let k = TableListTex { appdata: app };
+    let j = TableList::new(&k,
+                                                   //ready
+                                                   Box::new(|| {
+                  println!("ready");
+                }),
+                                                   //join
+                                                   Box::new(|| {
+                  
+                }),
+                                                   //leave
+                                                   Box::new(|| {
+                    
+                }),
+                                                   //change_player_number
+                                                   Box::new(|x| {
+                   
+                }),
+                                                   table,//players
+                                                   3,//table_space
+                                                   4,//max_space
+                                                   true//joined
+                                                   )
+            .w_h(1000.0, 200.0)
+            .middle()
+            .label_color(color::GREEN);
+    j.set(ids.tablelist, ui);
 }

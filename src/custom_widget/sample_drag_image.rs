@@ -15,6 +15,8 @@ pub struct Image {
     pub toggle_image_id: Option<image::Id>,
     /// The image overlay on the mouse while is held for more than 2 seconds
     pub spinner_image_id: Option<image::Id>,
+    /// source_rect
+    pub source_rectangle: Option<Rect>,
 }
 /// A pressable button widget whose reaction is triggered upon release.
 #[derive(WidgetCommon)]
@@ -90,6 +92,7 @@ impl Button<Image> {
             image_id: img,
             toggle_image_id: None,
             spinner_image_id: None,
+            source_rectangle: None,
         };
         Self::new_internal(image)
     }
@@ -101,6 +104,10 @@ impl Button<Image> {
     /// The spinner image overlay displayed when the button is held for 2 seconds.
     pub fn spinner_image(mut self, id: image::Id) -> Self {
         self.show.spinner_image_id = Some(id);
+        self
+    }
+    pub fn source_rectangle(mut self, rect: Rect) -> Self {
+        self.show.source_rectangle = Some(rect);
         self
     }
 }
@@ -146,13 +153,15 @@ impl Widget for Button<Image> {
             show.image_id
         };
         let (x, y, w, h) = rect.x_y_w_h();
-        let image = widget::Image::new(widget_image)
+        let mut image = widget::Image::new(widget_image)
             .x_y(x, y)
             .top_right_with_margins_on(id, h * 0.2, w * 0.2)
             .w_h(w * 0.6, h * 0.6)
             .parent(id)
             .graphics_for(id);
-
+        if let Some(_rect) = show.source_rectangle {
+            image = image.source_rectangle(_rect);
+        }
         image.set(state.ids.image, ui);
         if let Some(spinner_index) = draw_spinner_index {
             draw_spinner_op(id,

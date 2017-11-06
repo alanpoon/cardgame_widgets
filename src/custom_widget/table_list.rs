@@ -1,4 +1,4 @@
-use conrod::{self, widget, Positionable, Widget, Sizeable, Labelable};
+use conrod::{self, widget, Positionable, Widget, Sizeable, Labelable, Colorable};
 use custom_widget::pad_text_button;
 
 pub trait TableListTexts {
@@ -30,17 +30,8 @@ pub struct TableList<'a, T: TableListTexts + 'a> {
 
 #[derive(Copy, Clone, Debug, Default, PartialEq, WidgetStyle)]
 pub struct Style {
-    /// Color of the button's label.
-    #[conrod(default = "theme.shape_color")]
-    pub color: Option<conrod::Color>,
     #[conrod(default = "theme.label_color")]
     pub label_color: Option<conrod::Color>,
-    /// Font size of the button's label.
-    #[conrod(default = "theme.font_size_medium")]
-    pub label_font_size: Option<conrod::FontSize>,
-    /// Specify a unique font for the label.
-    #[conrod(default = "theme.font_id")]
-    pub label_font_id: Option<Option<conrod::text::font::Id>>,
 }
 
 widget_ids! {
@@ -88,10 +79,8 @@ impl<'a, T> TableList<'a, T>
         }
     }
 
-    /// Specify the font used for displaying the label.
-    pub fn label_font_id(mut self, font_id: conrod::text::font::Id) -> Self {
-        self.style.label_font_id = Some(Some(font_id));
-        self
+    builder_methods!{
+        pub label_color { style.label_color = Some(conrod::Color) }
     }
 }
 
@@ -120,13 +109,14 @@ impl<'a, T> Widget for TableList<'a, T>
     /// Update the state of the button by handling any input that has occurred since the last
     /// update.
     fn update(self, args: widget::UpdateArgs<Self>) -> Self::Event {
-        let widget::UpdateArgs { id, state, rect, ui, .. } = args;
-        let (_x, y, w, h) = rect.x_y_w_h();
+        let widget::UpdateArgs { id, state, rect, ui, style, .. } = args;
+        let (_x, _y, w, h) = rect.x_y_w_h();
         let pad = 0.01 * w;
         widget::Rectangle::outline([w, h]).top_left_of(id).set(state.ids.rect, ui);
         if self.joined {
             let r_but = widget::Button::new()
                 .label(self.appdata.text_ready())
+                .label_color(style.label_color((&ui.theme)))
                 .w((w - (2.0 * pad)) / 8.0)
                 .h(0.4 * h)
                 .top_left_with_margins_on(id, 0.01 * h, 0.01 * w)
@@ -136,6 +126,7 @@ impl<'a, T> Widget for TableList<'a, T>
             }
             let l_but = widget::Button::new()
                 .label(self.appdata.text_leave())
+                .label_color(style.label_color((&ui.theme)))
                 .w((w - (2.0 * pad)) / 8.0)
                 .h(0.4 * h)
                 .down_from(state.ids.ready_join, 2.0)
@@ -146,6 +137,7 @@ impl<'a, T> Widget for TableList<'a, T>
         } else {
             let r_but = widget::Button::new()
                 .label(self.appdata.text_join())
+                .label_color(style.label_color((&ui.theme)))
                 .w((w - (2.0 * pad)) / 8.0)
                 .h(0.4 * h)
                 .top_left_with_margins_on(id, 0.01 * h, 0.01 * w)
@@ -155,12 +147,13 @@ impl<'a, T> Widget for TableList<'a, T>
             }
         }
 
-
+        let change_table_space_but_w = w / 8.0;
         let f = format!("{} {}", self.table_space, self.appdata.text_playergame());
         widget::Text::new(&f)
-            .w((w - (2.0 * pad)) / 8.0)
+            .w(change_table_space_but_w)
             .h(0.8 * h)
             .right_from(state.ids.ready_join, 2.0)
+            .color(style.label_color((&ui.theme)))
             .set(state.ids.table_space, ui);
         let mut players_string = "".to_owned();
         let num = self.players.len();
@@ -175,13 +168,14 @@ impl<'a, T> Widget for TableList<'a, T>
             a += 1;
         }
         widget::Text::new(&players_string)
-            .w((w - (2.0 * pad)) / 3.0)
+            .w((w - (2.0 * pad)) / 7.0)
         //    .padded_w_of(state.ids.table_space, 0.0)
         //    .mid_top_with_margin_on(button_id, 4.0)
             .h(0.8 * h)
             .right_from(state.ids.table_space, 2.0)
+            .color(style.label_color((&ui.theme)))
             .set(state.ids.players_text, ui);
-        let change_table_space_but_w = w / 8.0;
+
         if state.ids.change_table_space.len() < self.max_space {
             let id_gen = &mut ui.widget_id_generator();
             state.update(|state| state.ids.change_table_space.resize(self.max_space, id_gen));
@@ -192,7 +186,6 @@ impl<'a, T> Widget for TableList<'a, T>
             .iter()
             .enumerate();
         if self.joined {
-            println!("inside self.joined");
             let mut iplay = self.players.len();
             while (iplay) < self.table_space {
                 if let Some((counter, &sym)) = change_table_space_iter.next() {
@@ -203,10 +196,11 @@ impl<'a, T> Widget for TableList<'a, T>
                                         self.appdata.text_playergame());
                         let but = pad_text_button::Button::new(4)
                             .label(&f)
-                            .x_y(0.7 * w + (counter as f64) * change_table_space_but_w, y)
+                            .label_color(style.label_color((&ui.theme)))
+                            .right_from(state.ids.players_text,
+                                        (counter as f64) * change_table_space_but_w)
                             .w_h(change_table_space_but_w, 0.8 * h)
                             .set(sym, ui);
-
                         for _i in but {
                             (*self.change_table_space_closure)(iplay);
                         }
@@ -217,9 +211,7 @@ impl<'a, T> Widget for TableList<'a, T>
                 }
 
             }
-            println!("1st while");
             while iplay < self.max_space {
-                println!("iplay {}", iplay);
                 if let Some((counter, &sym)) = change_table_space_iter.next() {
                     let f = format!("{} {} {}",
                                     self.appdata.text_changeto(),
@@ -227,7 +219,9 @@ impl<'a, T> Widget for TableList<'a, T>
                                     self.appdata.text_playergame());
                     let but = pad_text_button::Button::new(4)
                         .label(&f)
-                        .x_y(0.7 * w + (counter as f64) * change_table_space_but_w, y)
+                        .label_color(style.label_color((&ui.theme)))
+                        .right_from(state.ids.players_text,
+                                    (counter as f64) * change_table_space_but_w)
                         .w_h(change_table_space_but_w, 0.8 * h)
                         .set(sym, ui);
 
@@ -238,7 +232,6 @@ impl<'a, T> Widget for TableList<'a, T>
                 }
 
             }
-            println!("2nd while");
         }
 
         Some(())

@@ -1,19 +1,16 @@
-use conrod::{self, widget, Positionable, Widget, Sizeable, text, Labelable};
-pub trait PromptSender {
-    fn send(&self, msg: String);
-}
+use conrod::{self, widget, Positionable, Widget, Sizeable, color, text, Labelable, image};
+use custom_widget::animated_button;
+use sprite::SpriteInfo;
 /// The type upon which we'll implement the `Widget` trait.
 #[derive(WidgetCommon)]
-pub struct PromptView<'a, PS>
-    where PS: PromptSender + Clone + 'a
-{
+pub struct PromptView<'a> {
     /// An object that handles some of the dirty work of rendering a GUI. We don't
     /// really have to worry about it.
     #[conrod(common_builder)]
     common: widget::CommonBuilder,
+    pub button_image: image::Id,
+    pub buttons_sprite_label: Vec<(SpriteInfo, &'a str, Box<Fn() + 'a>)>,
     pub prompt: (f64, &'a str), //width%,text
-    pub label_closure: &'a Vec<(&'a str, Box<Fn(PS) + 'a>)>,
-    pub promptsender: PS,
     /// See the Style struct below.
     style: Style,
 }
@@ -45,18 +42,16 @@ pub struct State {
     ids: Ids,
 }
 
-impl<'a, PS> PromptView<'a, PS>
-    where PS: PromptSender + Clone + 'a
-{
+impl<'a> PromptView<'a> {
     /// Create a button context to be built upon.
-    pub fn new(label_closure: &'a Vec<(&'a str, Box<Fn(PS) + 'a>)>,
-               prompt: (f64, &'a str),
-               promptsender: PS)
+    pub fn new(button_image: image::Id,
+               buttons_sprite_label: Vec<(SpriteInfo, &'a str, Box<Fn() + 'a>)>,
+               prompt: (f64, &'a str))
                -> Self {
         PromptView {
+            button_image: button_image,
             prompt: prompt,
-            label_closure: label_closure,
-            promptsender: promptsender,
+            buttons_sprite_label: buttons_sprite_label,
             common: widget::CommonBuilder::default(),
             style: Style::default(),
         }
@@ -67,18 +62,11 @@ impl<'a, PS> PromptView<'a, PS>
         self.style.label_font_id = Some(Some(font_id));
         self
     }
-    builder_methods!{
-        pub color { style.color = Some(conrod::Color) }
-        pub label_color{style.label_color = Some(conrod::Color)}
-        pub label_font_size{style.label_font_size = Some(conrod::FontSize)}
-    }
 }
 
 /// A custom Conrod widget must implement the Widget trait. See the **Widget** trait
 /// documentation for more details.
-impl<'a, PS> Widget for PromptView<'a, PS>
-    where PS: PromptSender + Clone + 'a
-{
+impl<'a> Widget for PromptView<'a> {
     /// The State struct that we defined above.
     type State = State;
     /// The Style struct that we defined using the `widget_style!` macro.
@@ -100,7 +88,7 @@ impl<'a, PS> Widget for PromptView<'a, PS>
     /// update.
     fn update(self, args: widget::UpdateArgs<Self>) -> Self::Event {
         let widget::UpdateArgs { id, state, rect, ui, .. } = args;
-        let num = self.label_closure.len();
+        let num = self.buttons_sprite_label.len();
         let (_x, _y, w, h) = rect.x_y_w_h();
         let mut f1 = 16;
         let mut l1 = 2.0;
@@ -116,26 +104,37 @@ impl<'a, PS> Widget for PromptView<'a, PS>
             .line_spacing(l1)
             .top_left_with_margins_on(id, 0.0, 0.0)
             .set(state.ids.prompt, ui);
-        let (mut items, _) = widget::List::flow_right(num)
+        let (mut events, _) = widget::list_select::ListSelect::single(num)
+            .flow_right()
             .down_from(state.ids.prompt, 0.0)
-            .item_size(100.0)
+            .item_size(40.0)
             .w(w - self.prompt.0)
             .set(state.ids.list, ui);
-        let mut vec_iter = self.label_closure.iter();
-        while let (Some(&(label, ref closure)), Some(ref item)) =
-            (vec_iter.next(), items.next(ui)) {
+        let mut vec_iter = self.buttons_sprite_label.iter();
+        while let (Some(&(z, label, ref closure)), Some(ref event)) =
+            (vec_iter.next(), events.next(ui, |_| false)) {
+            use conrod::widget::list_select::Event;
+            match event {
+                &Event::Item(item) => {
+                    let button_index = 1.0;
+                    let d = animated_button::AnimatedButton::image(self.button_image)
+                        .label(label)
+                        .label_font_size(16)
+                        .label_color(color::BLACK)
+                        .w((w - self.prompt.0) / (num as f64))
+                        .h(0.3 * h)
+                        .normal_rect(z.src_rect(button_index))
+                        .hover_rect(z.src_rect(button_index + 1.0))
+                        .press_rect(z.src_rect(button_index + 2.0));
+                    let dj = item.set(d, ui);
+                    if dj.was_clicked() {
+                        (closure)();
+                    }
+                }
+                //&Event::Selection(idx) => {}
+                _ => {}
 
-            let d = widget::Button::new()
-                .w((w - self.prompt.0) / (num as f64))
-                .h(0.3 * h)
-                .label(label)
-                .label_color(self.style.label_color((&ui.theme)))
-                .label_font_size(self.style.label_font_size(&ui.theme));
-            let dj = item.set(d, ui);
-            for _ in dj {
-                (*closure)(self.promptsender.clone());
             }
-
         }
 
         Some(())
