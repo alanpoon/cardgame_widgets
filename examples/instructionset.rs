@@ -7,8 +7,9 @@ pub mod support;
 use conrod::{widget, color, Colorable, Widget, Positionable, Sizeable, Labelable};
 use conrod::backend::glium::glium::{self, glutin, Surface};
 use conrod::event;
-
-use cardgame_widgets::custom_widget::promptview::{PromptView, PromptSender};
+use conrod::widget::{Oval, Rectangle};
+use conrod::widget::button::{Button, Flat};
+use cardgame_widgets::custom_widget::instructionset::{InstructionSet, Instructable};
 use std::time::Instant;
 use std::sync::mpsc::Sender;
 widget_ids! {
@@ -16,23 +17,50 @@ widget_ids! {
          master,
          body,
          footer,
-         promptview,
-         button_body
+         instructionset,
     }
 }
-pub struct App<PS>
-    where PS: PromptSender + Clone
-{
-    instructions: Vec<(&'static str, Box<Fn(PS)>)>,
+pub struct App {
+    instructions1: Vec<&'static str>,
+    instructions2: Vec<([f64; 4], Option<[f64; 4]>)>, //([l,t,w,h_of rect],Some([l,t,w,h of oval]))
+    next: &'static str,
+    print_instruction: bool,
 }
-#[derive(Clone)]
-pub struct PromptSendable(Sender<String>);
-impl PromptSender for PromptSendable {
-    fn send(&self, msg: String) {
-        self.0.send(msg).unwrap();
+pub struct Instruction<'a>(&'a str, &'a [f64; 4], &'a Option<[f64; 4]>);
+impl<'a> Instructable<'a> for Instruction<'a> {
+    fn label(&self) -> &'a str {
+        self.0
     }
-}
+    fn rect(&self, wh: [f64; 2]) -> Rectangle {
+        widget::Rectangle::fill_with([self.1[2].clone() * wh[0], self.1[3].clone() * wh[1]],
+                                     color::BLACK.with_alpha(0.3))
+                .top_left_with_margins(self.1[0] * wh[0], self.1[1] * wh[1])
 
+    }
+    fn button(&self, wh: [f64; 2]) -> Button<Flat> {
+        widget::Button::new().w_h(100.0, 50.0).mid_bottom()
+    }
+    fn oval_one(&self, wh: [f64; 2]) -> Option<Oval> {
+        if let Some(_dim) = self.2.clone() {
+            Some(widget::Oval::outline_styled([_dim[2] * wh[0], _dim[3] * wh[1]],
+                                              widget::line::Style::new().thickness(5.0))
+                         .top_left_with_margins(_dim[0] * wh[0], _dim[1] * wh[1]))
+        } else {
+            None
+        }
+
+    }
+    fn oval_two(&self, wh: [f64; 2]) -> Option<Oval> {
+        if let Some(_dim) = self.2.clone() {
+            Some(widget::Oval::outline_styled([_dim[2] * wh[0] * 1.2, _dim[3] * wh[1]],
+                                              widget::line::Style::new().thickness(5.0))
+                         .top_left_with_margins(_dim[0] * wh[0], _dim[1] * wh[1]))
+        } else {
+            None
+        }
+
+    }
+}
 #[derive(Clone)]
 pub enum ConrodMessage {
     Event(Instant, conrod::event::Input),
@@ -50,7 +78,6 @@ fn main() {
     let (screen_w, screen_h) = display.get_framebuffer_dimensions();
     let mut ui = conrod::UiBuilder::new([screen_w as f64, screen_h as f64]).build();
     ui.fonts.insert(support::assets::load_font("fonts/NotoSans/NotoSans-Regular.ttf"));
-    //let events_loop_proxy = events_loop.create_proxy();
     let mut ids = Ids::new(ui.widget_id_generator());
     let mut last_update = std::time::Instant::now();
     let image_map: conrod::image::Map<glium::texture::Texture2d> = conrod::image::Map::new();
@@ -58,27 +85,13 @@ fn main() {
     let mut old_captured_event: Option<ConrodMessage> = None;
     let mut captured_event: Option<ConrodMessage> = None;
     let sixteen_ms = std::time::Duration::from_millis(1000);
-    let (test_tx, test_rx) = std::sync::mpsc::channel();
-    std::thread::spawn(move || loop {
-                           while let Ok(s) = test_rx.try_recv() {
-                               println!("s is {:?}", s);
-                           }
-                       });
 
-    let promptsender = PromptSendable(test_tx);
-    let mut app = App::<PromptSendable> {
-        instructions: vec![("instruction 1",
-                            Box::new(|ps| {
-                                         let f = format!("{{'greedcommand':1}}");
-
-                                         ps.send(f);
-                                     })),
-                           ("instruction 2",
-                            Box::new(|ps| {
-                                         let f = format!("{{'greedcommand':2}}");
-
-                                         ps.send(f);
-                                     }))],
+    let mut app = App {
+        instructions1: vec!["instruction 1", "instruction 2"],
+        instructions2: vec![([0.4, 0.4, 0.2, 0.2], Some([0.2, 0.3, 0.1, 0.1])),
+                            ([0.4, 0.4, 0.2, 0.2], None)],
+        next: "next",
+        print_instruction: true,
     };
 
     'render: loop {
@@ -137,12 +150,12 @@ fn main() {
                 }
                 old_captured_event = Some(ConrodMessage::Event(d, input.clone()));
                 let mut ui = ui.set_widgets();
-                set_widgets(&mut ui, &mut ids, &mut app, promptsender.clone());
+                set_widgets(&mut ui, &mut ids, &mut app);
 
             }
             Some(ConrodMessage::Thread(_t)) => {
                 let mut ui = ui.set_widgets();
-                set_widgets(&mut ui, &mut ids, &mut app, promptsender.clone());
+                set_widgets(&mut ui, &mut ids, &mut app);
             }
             None => {
                 let now = std::time::Instant::now();
@@ -165,25 +178,23 @@ fn main() {
     }
 }
 
-fn set_widgets(ui: &mut conrod::UiCell,
-               ids: &mut Ids,
-               app: &mut App<PromptSendable>,
-               promptsender: PromptSendable) {
+fn set_widgets(ui: &mut conrod::UiCell, ids: &mut Ids, app: &mut App) {
     widget::Canvas::new()
-        .color(color::TRANSPARENT)
-        .flow_down(&[(ids.body, widget::Canvas::new().color(color::DARK_BLUE)),
+        .color(color::BLUE)
+        .flow_down(&[(ids.body, widget::Canvas::new().color(color::BLUE)),
                      (ids.footer, widget::Canvas::new().color(color::DARK_GREEN).length(100.0))])
         .set(ids.master, ui);
-
-    let prompt_j = PromptView::new(&app.instructions, (0.5, "asdsdasdadasdad"), promptsender)
-        .padded_wh_of(ids.footer, 2.0)
-        .middle_of(ids.footer);
-    prompt_j.set(ids.promptview, ui);
-    let j = widget::Button::new()
-        .middle_of(ids.body)
-        .color(color::BLACK.with_alpha(0.3))
-        .set(ids.button_body, ui);
-    if j.was_clicked() {
-        println!("kkkk");
+    let g_vec = app.instructions1
+        .iter()
+        .zip(app.instructions2.iter())
+        .map(|(ref label, &(ref rect_tuple, ref oval_option))| {
+                 Instruction(label, rect_tuple, oval_option)
+             })
+        .collect::<Vec<Instruction>>();
+    if app.print_instruction {
+        let prompt_j =
+            InstructionSet::new(&g_vec, app.next).parent_id(ids.master).label_color(color::WHITE);
+        app.print_instruction = prompt_j.set(ids.instructionset, ui);
     }
+
 }

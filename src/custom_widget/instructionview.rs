@@ -55,13 +55,10 @@ pub struct State {
 
 impl<'a> InstructionView<'a> {
     /// Create a button context to be built upon.
-    pub fn new(transparent: image::Id,
-               button: image::Id,
-               button_sprite: SpriteInfo,
+    pub fn new(
                dist_arrow_from_center: [f64; 2],
                transparent_rect: [f64; 4],
                ovaldim: [f64; 2],
-               dif_frame: Option<i32>,
                instruction: Option<&'a str>,
                next: &'a str)
                -> Self {
@@ -71,7 +68,6 @@ impl<'a> InstructionView<'a> {
             transparent: transparent,
             button: button,
             button_sprite: button_sprite,
-            dif_frame: dif_frame,
             ovaldim: ovaldim,
             instruction: instruction,
             next: next,
@@ -85,6 +81,7 @@ impl<'a> InstructionView<'a> {
         self.style.label_font_id = Some(Some(font_id));
         self
     }
+
 }
 
 /// A custom Conrod widget must implement the Widget trait. See the **Widget** trait
