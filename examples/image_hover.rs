@@ -1,69 +1,37 @@
 #[macro_use]
 extern crate conrod;
+#[macro_use]
+extern crate conrod_derive;
 extern crate cardgame_widgets;
 extern crate find_folder;
 extern crate image;
 pub mod support;
-use conrod::{widget, color, Colorable, Widget, Positionable, Sizeable, Labelable};
+use conrod::{widget, color, Colorable, Widget, Positionable, Sizeable, Rect};
 use conrod::backend::glium::glium::{self, glutin, Surface};
 use conrod::event;
-use conrod::widget::{Oval, Rectangle};
-use conrod::widget::button::{Button, Flat};
-use cardgame_widgets::custom_widget::instructionset::{InstructionSet, Instructable};
+use conrod::widget::primitive::image::Image;
+use cardgame_widgets::custom_widget::image_hover::{Hoverable, ImageHover};
 use std::time::Instant;
-use std::sync::mpsc::Sender;
+pub struct ImageHoverable(Image, Option<Image>, Option<Image>);
+impl Hoverable for ImageHoverable {
+    fn idle(&self) -> Image {
+        self.0
+    }
+    fn hover(&self) -> Option<Image> {
+        self.1
+    }
+    fn press(&self) -> Option<Image> {
+        self.2
+    }
+}
 widget_ids! {
     pub struct Ids {
          master,
-         body,
-         footer,
-         instructionset,
+         listview,
     }
 }
 pub struct App {
-    instructions1: Vec<&'static str>,
-    instructions2: Vec<([f64; 4], Option<[f64; 4]>)>, //([l,t,w,h_of rect],Some([l,t,w,h of oval]))
-    next: &'static str,
-    print_instruction: bool,
-}
-pub struct Instruction<'a>(&'a str, &'a [f64; 4], &'a Option<[f64; 4]>, widget::Id);
-impl<'a> Instructable<'a> for Instruction<'a> {
-    fn label(&self) -> &'a str {
-        self.0
-    }
-    fn rect(&self, wh: [f64; 2]) -> Rectangle {
-        widget::Rectangle::fill_with([self.1[2].clone() * wh[0], self.1[3].clone() * wh[1]],
-                                     color::BLACK.with_alpha(0.3))
-                .top_left_with_margins_on(self.3, self.1[1] * wh[1], self.1[0] * wh[0])
-
-    }
-    fn button(&self, wh: [f64; 2]) -> Button<Flat> {
-        widget::Button::new().w_h(100.0, 50.0).mid_bottom()
-    }
-    fn oval_one(&self, wh: [f64; 2]) -> Option<Oval> {
-        if let Some(_dim) = self.2.clone() {
-            Some(widget::Oval::outline_styled([_dim[2] * wh[0], _dim[3] * wh[1]],
-                                              widget::line::Style::new().thickness(5.0))
-                         .top_left_with_margins_on(self.3,
-                                                   _dim[1] * wh[1],
-                                                   _dim[0] * wh[0]))
-        } else {
-            None
-        }
-
-    }
-    fn oval_two(&self, wh: [f64; 2]) -> Option<Oval> {
-        if let Some(_dim) = self.2.clone() {
-            Some(widget::Oval::outline_styled([_dim[2] * wh[0] * 1.2, _dim[3] * wh[1]],
-                                              widget::line::Style::new().thickness(5.0))
-                         .top_left_with_margins_on(self.3,
-                                                   _dim[1] * wh[1],
-                                                   _dim[0] * wh[0]))
-        } else {
-            None
-        }
-
-    }
+    hash: Vec<color::Color>,
 }
 #[derive(Clone)]
 pub enum ConrodMessage {
@@ -81,27 +49,25 @@ fn main() {
     // construct our `Ui`.
     let (screen_w, screen_h) = display.get_framebuffer_dimensions();
     let mut ui = conrod::UiBuilder::new([screen_w as f64, screen_h as f64]).build();
-    ui.fonts.insert(support::assets::load_font("fonts/NotoSans/NotoSans-Regular.ttf"));
-    let mut ids = Ids::new(ui.widget_id_generator());
-    let mut last_update = std::time::Instant::now();
-    let image_map: conrod::image::Map<glium::texture::Texture2d> = conrod::image::Map::new();
 
+    let rust_logo = load_image(&display, "images/rust.png");
+    let events_loop_proxy = events_loop.create_proxy();
+    let mut ids = Ids::new(ui.widget_id_generator());
+    let mut demo_text_edit = "Click here !".to_owned();
+    let mut last_update = std::time::Instant::now();
+    let mut c = 0;
+    let mut image_map: conrod::image::Map<glium::texture::Texture2d> = conrod::image::Map::new();
+    let rust_logo = image_map.insert(rust_logo);
     let mut old_captured_event: Option<ConrodMessage> = None;
     let mut captured_event: Option<ConrodMessage> = None;
-    let sixteen_ms = std::time::Duration::from_millis(1000);
-
+    let sixteen_ms = std::time::Duration::from_millis(800);
     let mut app = App {
-        instructions1: vec!["instruction 1", "instruction 2"],
-        instructions2: vec![([0.1, 0.05, 0.7, 0.9], Some([0.2, 0.3, 0.1, 0.1])),
-                            ([0.1, 0.05, 0.7, 0.9], None)],
-        next: "next",
-        print_instruction: true,
+        hash: vec![color::DARK_YELLOW, color::YELLOW, color::DARK_BLUE, color::LIGHT_PURPLE],
     };
 
     'render: loop {
         let mut to_break = false;
         let mut to_continue = false;
-
         events_loop.poll_events(|event| {
             match event.clone() {
                 glium::glutin::Event::WindowEvent { event, .. } => {
@@ -119,7 +85,7 @@ fn main() {
                 }
                 _ => {}
             }
-            let _input = match conrod::backend::winit::convert_event(event.clone(), &display) {
+            let input = match conrod::backend::winit::convert_event(event.clone(), &display) {
                 None => {
                     to_continue = true;
                 }
@@ -144,7 +110,7 @@ fn main() {
         }
         match captured_event {
             Some(ConrodMessage::Event(d, ref input)) => {
-                if let Some(ConrodMessage::Event(_oldd, ref oldinput)) = old_captured_event {
+                if let Some(ConrodMessage::Event(oldd, ref oldinput)) = old_captured_event {
                     if oldinput.clone() != input.clone() {
                         ui.handle_event(input.clone());
                     }
@@ -154,12 +120,12 @@ fn main() {
                 }
                 old_captured_event = Some(ConrodMessage::Event(d, input.clone()));
                 let mut ui = ui.set_widgets();
-                set_widgets(&mut ui, &mut ids, &mut app);
+                set_widgets(&mut ui, &mut ids, &mut app, rust_logo);
 
             }
-            Some(ConrodMessage::Thread(_t)) => {
+            Some(ConrodMessage::Thread(t)) => {
                 let mut ui = ui.set_widgets();
-                set_widgets(&mut ui, &mut ids, &mut app);
+                set_widgets(&mut ui, &mut ids, &mut app, rust_logo);
             }
             None => {
                 let now = std::time::Instant::now();
@@ -182,23 +148,38 @@ fn main() {
     }
 }
 
-fn set_widgets(ui: &mut conrod::UiCell, ids: &mut Ids, app: &mut App) {
-    widget::Canvas::new()
-        .color(color::BLUE)
-        .flow_down(&[(ids.body, widget::Canvas::new().color(color::BLUE)),
-                     (ids.footer, widget::Canvas::new().color(color::DARK_GREEN).length(100.0))])
-        .set(ids.master, ui);
-    let g_vec = app.instructions1
-        .iter()
-        .zip(app.instructions2.iter())
-        .map(|(ref label, &(ref rect_tuple, ref oval_option))| {
-                 Instruction(label, rect_tuple, oval_option, ids.footer)
-             })
-        .collect::<Vec<Instruction>>();
-    if app.print_instruction {
-        let prompt_j =
-            InstructionSet::new(&g_vec, app.next).parent_id(ids.footer).label_color(color::WHITE);
-        app.print_instruction = prompt_j.set(ids.instructionset, ui);
+fn set_widgets(ui: &mut conrod::UiCell,
+               ids: &mut Ids,
+               _app: &mut App,
+               rust_logo: conrod::image::Id) {
+    widget::Canvas::new().color(color::LIGHT_BLUE).set(ids.master, ui);
+    // let j = widget::Canvas::new().w_h(100.0, 300.0);
+    let item_h = 260.0;
+    let (mut items, scrollbar) = widget::List::flow_right(9)
+        .item_size(item_h)
+        .middle_of(ids.master)
+        .h(300.0)
+        .padded_w_of(ids.master, 20.0)
+        .scrollbar_next_to()
+        .set(ids.listview, ui);
+    if let Some(s) = scrollbar {
+        s.set(ui)
+    }
+    while let Some(item) = items.next(ui) {
+        let hover_rect = Rect::from_corners([20.0, 40.0], [116.0, 100.0]);
+        let _ih = ImageHoverable(Image::new(rust_logo),
+                                 Some(Image::new(rust_logo).source_rectangle(hover_rect)),
+                                 None);
+        let j = ImageHover::new(_ih).w_h(260.0, 200.0);
+        item.set(j, ui);
     }
 
+}
+fn load_image(display: &glium::Display, path: &str) -> glium::texture::Texture2d {
+    let rgba_image = support::assets::load_image(path).to_rgba();
+    let image_dimensions = rgba_image.dimensions();
+    let raw_image = glium::texture::RawImage2d::from_raw_rgba_reversed(&rgba_image.into_raw(),
+                                                                       image_dimensions);
+    let texture = glium::texture::Texture2d::new(display, raw_image).unwrap();
+    texture
 }

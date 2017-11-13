@@ -1,4 +1,4 @@
-use conrod::{self, widget, Positionable, Widget, Sizeable, color, text, Labelable, Colorable};
+use conrod::{self, widget, Positionable, Widget, Labelable, Colorable};
 use conrod::widget::{Rectangle, Oval};
 use conrod::widget::button::{Button, Flat};
 pub trait Instructable<'a> {
@@ -119,7 +119,8 @@ impl<'a, I> Widget for InstructionSet<'a, I>
         let len = self.instructions.len();
         let mut print = true;
         let style = self.style;
-        let ((_x, _y, w, h), parent_id) = if let Some(Some(_parent_id)) = style.parent_id {
+        let ((_x, _y, w, h), _parent_id) = if let Some(Some(_parent_id)) = style.parent_id {
+            println!("there is parent_id");
             (ui.rect_of(_parent_id).unwrap().x_y_w_h(), _parent_id)
         } else {
             (rect.x_y_w_h(), id)
@@ -131,7 +132,7 @@ impl<'a, I> Widget for InstructionSet<'a, I>
                                                                   _inst.button([w, h]),
                                                                   _inst.oval_one([w, h]),
                                                                   _inst.oval_two([w, h]));
-            _rect.parent(parent_id).set(state.ids.frame, ui);
+            _rect.set(state.ids.frame, ui);
             let (_rx, _ry, _rw, _rh) = ui.rect_of(state.ids.frame).unwrap().x_y_w_h();
             let font_id = style.label_font_id(&ui.theme).or(ui.fonts.ids().next());
             widget::Text::new(_label)
@@ -143,6 +144,7 @@ impl<'a, I> Widget for InstructionSet<'a, I>
 
             let j = _button.color(style.button_color(&ui.theme))
                 .label(self.next)
+                .parent(state.ids.frame)
                 .set(state.ids.next, ui);
             for _ in j {
                 if state.index + 1 == len {
@@ -154,10 +156,10 @@ impl<'a, I> Widget for InstructionSet<'a, I>
             }
             if let (Some(_oval_one), Some(_oval_two)) = (_oval_one, _oval_two) {
                 if state.frame == 0 {
-                    _oval_one.parent(parent_id).set(state.ids.oval, ui);
+                    _oval_one.set(state.ids.oval, ui);
                     state.update(|state| state.frame += 1);
                 } else {
-                    _oval_two.parent(parent_id).set(state.ids.oval, ui);
+                    _oval_two.set(state.ids.oval, ui);
                     state.update(|state| state.frame = 0);
                 }
             }
