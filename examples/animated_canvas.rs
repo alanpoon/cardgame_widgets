@@ -9,19 +9,23 @@ pub mod support;
 use conrod::{widget, color, Colorable, Widget, Positionable, Sizeable, Rect};
 use conrod::backend::glium::glium::{self, glutin, Surface};
 use conrod::event;
-use conrod::widget::primitive::image::Image;
-use cardgame_widgets::custom_widget::shuffle::Shuffle;
+use cardgame_widgets::custom_widget::animated_canvas;
 use std::time::Instant;
-
+#[derive(Clone,PartialEq,Debug)]
+enum Gamestate {
+    Green,
+    Red,
+}
 widget_ids! {
     pub struct Ids {
          master,
-         listview,
+         body,
+         footer
     }
 }
 pub struct App {
-    watch: bool,
-    frame: i32,
+    gamestate: Gamestate,
+    frame: u32,
 }
 #[derive(Clone)]
 pub enum ConrodMessage {
@@ -40,23 +44,19 @@ fn main() {
     let (screen_w, screen_h) = display.get_framebuffer_dimensions();
     let mut ui = conrod::UiBuilder::new([screen_w as f64, screen_h as f64]).build();
 
-    let rust_logo = load_image(&display, "images/rust.png");
-    let green_logo = load_image(&display, "images/green.png");
-    let back_logo = load_image(&display, "images/backside.jpg");
     let events_loop_proxy = events_loop.create_proxy();
     let mut ids = Ids::new(ui.widget_id_generator());
     let mut demo_text_edit = "Click here !".to_owned();
     let mut last_update = std::time::Instant::now();
     let mut c = 0;
+    let rust_logo = load_image(&display, "images/green.png");
     let mut image_map: conrod::image::Map<glium::texture::Texture2d> = conrod::image::Map::new();
     let rust_logo = image_map.insert(rust_logo);
-    let green_logo = image_map.insert(green_logo);
-    let back_logo = image_map.insert(back_logo);
     let mut old_captured_event: Option<ConrodMessage> = None;
     let mut captured_event: Option<ConrodMessage> = None;
     let sixteen_ms = std::time::Duration::from_millis(800);
     let mut app = App {
-        watch: true,
+        gamestate: Gamestate::Green,
         frame: 0,
     };
 
@@ -93,7 +93,6 @@ fn main() {
                     } else {
                         captured_event = Some(ConrodMessage::Event(d, input));
                     }
-
                 }
             };
         });
@@ -115,22 +114,12 @@ fn main() {
                 }
                 old_captured_event = Some(ConrodMessage::Event(d, input.clone()));
                 let mut ui = ui.set_widgets();
-                set_widgets(&mut ui,
-                            &mut ids,
-                            &mut app,
-                            rust_logo,
-                            green_logo,
-                            back_logo);
+                set_widgets(&mut ui, &mut ids, &mut app, rust_logo);
 
             }
             Some(ConrodMessage::Thread(t)) => {
                 let mut ui = ui.set_widgets();
-                set_widgets(&mut ui,
-                            &mut ids,
-                            &mut app,
-                            rust_logo,
-                            green_logo,
-                            back_logo);
+                set_widgets(&mut ui, &mut ids, &mut app, rust_logo);
             }
             None => {
                 let now = std::time::Instant::now();
@@ -156,28 +145,46 @@ fn main() {
 fn set_widgets(ui: &mut conrod::UiCell,
                ids: &mut Ids,
                _app: &mut App,
-               rust_logo: conrod::image::Id,
-               green_logo: conrod::image::Id,
-               back_logo: conrod::image::Id) {
-    let back_rect = Rect::from_corners([670.0, 70.0], [1130.0, 850.0]);
-    widget::Canvas::new().color(color::LIGHT_BLUE).set(ids.master, ui);
-    if _app.watch {
-        _app.watch = Shuffle::new(vec![Image::new(rust_logo),
-                                       Image::new(green_logo),
-                                       Image::new(rust_logo)],
-                                  Image::new(back_logo).source_rectangle(back_rect))
-                .give_out(vec![0, 1, 2])
-                .mid_left_of(ids.master)
-                .w(400.0)
-                .set(ids.listview, ui);
+               rust_logo: conrod::image::Id) {
 
-    }
-    if !_app.watch {
-        _app.frame += 1;
-        if _app.frame > 10 {
-            _app.watch = true;
-            _app.frame = 0;
+    match &_app.gamestate {
+        &Gamestate::Green => {
+            animated_canvas::Canvas::new()
+                .flow_down(&[(ids.body, animated_canvas::Canvas::new().color(color::BLUE)),
+                             (ids.footer,
+                              animated_canvas::Canvas::new()
+                                  .color(color::DARK_GREEN)
+                                  .length(200.0))])
+                .color(color::LIGHT_BLUE)
+                .watch_state(_app.gamestate.clone())
+                .close_icon(rust_logo)
+                .frame_rate(30)
+                .set(ids.master, ui);
+            if _app.frame > 300 {
+                _app.gamestate = Gamestate::Red;
+                _app.frame = 0;
+            } else {
+                _app.frame += 1;
+            }
         }
+        &Gamestate::Red => {
+            animated_canvas::Canvas::new()
+                .flow_down(&[(ids.body, animated_canvas::Canvas::new().color(color::BLUE)),
+                             (ids.footer,
+                              animated_canvas::Canvas::new().color(color::RED).length(200.0))])
+                .color(color::LIGHT_BLUE)
+                .watch_state(_app.gamestate.clone())
+                .frame_rate(30)
+                .close_icon(rust_logo)
+                .set(ids.master, ui);
+            if _app.frame > 300 {
+                _app.gamestate = Gamestate::Green;
+                _app.frame = 0;
+            } else {
+                _app.frame += 1;
+            }
+        }
+
     }
 
 }

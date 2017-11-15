@@ -110,7 +110,6 @@ impl Widget for Shuffle {
         let mut num_closed = state.num_closed.clone();
         let step_state =
             if state.frame <= close_frame_rate {
-                //1
                 AniState::Waitthen
             } else if state.frame <= close_frame_rate * (self.front_cards.len() + 1) as u16 {
                 AniState::Keep(state.frame % close_frame_rate)
@@ -118,15 +117,17 @@ impl Widget for Shuffle {
                 AniState::Backview
             } else if state.frame <= close_frame_rate * (self.front_cards.len() + 3) as u16 {
                 AniState::Shuffle(state.frame % close_frame_rate)
-            } else {
-                //<=(self.front_cards.len() + n)
+            } else if state.frame <= close_frame_rate * (self.front_cards.len() * 2 + 4) as u16 {
                 if let Some(_) = self.give_out {
                     AniState::Giveout(state.frame % close_frame_rate)
                 } else {
                     AniState::Reset
                 }
-
+            } else {
+                AniState::Reset
             };
+
+
         match step_state {
             AniState::Waitthen => {
                 while let (Some((_i, &_sym)), Some(&_image)) =
@@ -212,6 +213,7 @@ impl Widget for Shuffle {
 
 
         if let AniState::Reset = step_state {
+            state.update(|state|{state.frame=0;state.num_closed=0;});
             false
         } else {
             true
