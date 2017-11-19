@@ -213,7 +213,10 @@ impl Widget for Shuffle {
 
 
         if let AniState::Reset = step_state {
-            state.update(|state|{state.frame=0;state.num_closed=0;});
+            state.update(|state| {
+                             state.frame = 0;
+                             state.num_closed = 0;
+                         });
             false
         } else {
             true

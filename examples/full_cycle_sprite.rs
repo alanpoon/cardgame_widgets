@@ -9,29 +9,46 @@ pub mod support;
 use conrod::{widget, color, Colorable, Widget, Positionable, Sizeable, Rect};
 use conrod::backend::glium::glium::{self, glutin, Surface};
 use conrod::event;
-use cardgame_widgets::custom_widget::animated_canvas;
+use cardgame_widgets::custom_widget::full_cycle_sprite::{FullCycleSprite, Spriteable};
 use std::time::Instant;
-#[derive(Clone,PartialEq,Debug)]
-enum Gamestate {
-    Green,
-    Red,
-}
+
 widget_ids! {
     pub struct Ids {
          master,
-         body,
-         footer,
-         footer_image
+         spinner,
     }
 }
 pub struct App {
-    gamestate: Gamestate,
-    frame: u32,
+    watch: bool,
 }
 #[derive(Clone)]
 pub enum ConrodMessage {
     Event(Instant, conrod::event::Input),
     Thread(Instant),
+}
+pub struct SpriteInfo {
+    pub first: (f64, f64), //left corner of first
+    pub num_in_row: u16,
+    pub num_in_col: u16,
+    pub w_h: (f64, f64),
+    pub pad: (f64, f64, f64, f64),
+}
+impl Spriteable for SpriteInfo {
+    fn first(&self) -> (f64, f64) {
+        self.first
+    }
+    fn num_in_row(&self) -> u16 {
+        self.num_in_row
+    }
+    fn num_in_col(&self) -> u16 {
+        self.num_in_col
+    }
+    fn w_h(&self) -> (f64, f64) {
+        self.w_h
+    }
+    fn pad(&self) -> (f64, f64, f64, f64) {
+        self.pad
+    }
 }
 fn main() {
     let window = glutin::WindowBuilder::new();
@@ -45,21 +62,18 @@ fn main() {
     let (screen_w, screen_h) = display.get_framebuffer_dimensions();
     let mut ui = conrod::UiBuilder::new([screen_w as f64, screen_h as f64]).build();
 
+    let rust_logo = load_image(&display, "images/download.png");
     let events_loop_proxy = events_loop.create_proxy();
     let mut ids = Ids::new(ui.widget_id_generator());
     let mut demo_text_edit = "Click here !".to_owned();
     let mut last_update = std::time::Instant::now();
     let mut c = 0;
-    let rust_logo = load_image(&display, "images/green.png");
     let mut image_map: conrod::image::Map<glium::texture::Texture2d> = conrod::image::Map::new();
     let rust_logo = image_map.insert(rust_logo);
     let mut old_captured_event: Option<ConrodMessage> = None;
     let mut captured_event: Option<ConrodMessage> = None;
     let sixteen_ms = std::time::Duration::from_millis(800);
-    let mut app = App {
-        gamestate: Gamestate::Green,
-        frame: 0,
-    };
+    let mut app = App { watch: true };
 
     'render: loop {
         let mut to_break = false;
@@ -94,6 +108,7 @@ fn main() {
                     } else {
                         captured_event = Some(ConrodMessage::Event(d, input));
                     }
+
                 }
             };
         });
@@ -147,54 +162,18 @@ fn set_widgets(ui: &mut conrod::UiCell,
                ids: &mut Ids,
                _app: &mut App,
                rust_logo: conrod::image::Id) {
-
-    match &_app.gamestate {
-        &Gamestate::Green => {
-            animated_canvas::Canvas::new()
-                .flow_down(&[(ids.body, animated_canvas::Canvas::new().color(color::BLUE)),
-                             (ids.footer,
-                              animated_canvas::Canvas::new()
-                                  .color(color::DARK_GREEN)
-                                  .length(200.0))])
-                .color(color::LIGHT_BLUE)
-                .watch_state(_app.gamestate.clone())
-                .close_icon(rust_logo)
-                .frame_rate(30)
-                .set(ids.master, ui);
-            widget::Image::new(rust_logo)
-                .w_h(90.0, 90.0)
-                .middle_of(ids.footer)
-                .set(ids.footer_image, ui);
-            if _app.frame > 300 {
-                _app.gamestate = Gamestate::Red;
-                _app.frame = 0;
-            } else {
-                _app.frame += 1;
-            }
-        }
-        &Gamestate::Red => {
-            animated_canvas::Canvas::new()
-                .flow_down(&[(ids.body, animated_canvas::Canvas::new().color(color::BLUE)),
-                             (ids.footer,
-                              animated_canvas::Canvas::new().color(color::RED).length(200.0))])
-                .color(color::LIGHT_BLUE)
-                .watch_state(_app.gamestate.clone())
-                .frame_rate(30)
-                .close_icon(rust_logo)
-                .set(ids.master, ui);
-            widget::Image::new(rust_logo)
-                .w_h(90.0, 90.0)
-                .middle_of(ids.footer)
-                .set(ids.footer_image, ui);
-            if _app.frame > 300 {
-                _app.gamestate = Gamestate::Green;
-                _app.frame = 0;
-            } else {
-                _app.frame += 1;
-            }
-        }
-
-    }
+    let _sprite = SpriteInfo {
+        first: (0.0, 400.0),
+        num_in_row: 12,
+        num_in_col: 4,
+        w_h: (100.0, 100.0),
+        pad: (0.0, 0.0, 0.0, 0.0),
+    };
+    widget::Canvas::new().color(color::LIGHT_BLUE).set(ids.master, ui);
+    FullCycleSprite::new(rust_logo, _sprite, _app.watch)
+        .mid_left_of(ids.master)
+        .w(400.0)
+        .set(ids.spinner, ui);
 
 }
 fn load_image(display: &glium::Display, path: &str) -> glium::texture::Texture2d {
