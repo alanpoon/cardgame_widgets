@@ -1,11 +1,7 @@
 use conrod::{widget, Positionable, Widget, Sizeable, Rect, image};
-pub trait Spriteable {
-    fn first(&self) -> (f64, f64);
-    fn num_in_row(&self) -> u16;
-    fn num_in_col(&self) -> u16;
-    fn w_h(&self) -> (f64, f64);
-    fn pad(&self) -> (f64, f64, f64, f64);
-}
+use sprite::{spriteable_rect, Spriteable};
+use std::time::{Duration, Instant};
+
 /// The type upon which we'll implement the `Widget` trait.
 #[derive(WidgetCommon)]
 pub struct FullCycleSprite<H: Spriteable> {
@@ -15,7 +11,6 @@ pub struct FullCycleSprite<H: Spriteable> {
     common: widget::CommonBuilder,
     pub image: image::Id,
     pub sprite: H,
-    pub alive: bool,
     /// See the Style struct below.
     style: Style,
 }
@@ -37,17 +32,17 @@ widget_ids! {
 pub struct State {
     ids: Ids,
     frame: f32,
+    last_update: Instant,
 }
 
 impl<H> FullCycleSprite<H>
     where H: Spriteable
 {
     /// Create a button context to be built upon.
-    pub fn new(image: image::Id, sprite: H, alive: bool) -> Self {
+    pub fn new(image: image::Id, sprite: H) -> Self {
         FullCycleSprite {
             image: image,
             sprite: sprite,
-            alive: alive,
             common: widget::CommonBuilder::default(),
             style: Style::default(),
         }
@@ -75,6 +70,7 @@ impl<H> Widget for FullCycleSprite<H>
         State {
             ids: Ids::new(id_gen),
             frame: 0.0,
+            last_update: Instant::now(),
         }
     }
 
@@ -91,32 +87,34 @@ impl<H> Widget for FullCycleSprite<H>
         // necessary primitive graphics widgets.
         //
         let (_, _, w, h) = rect.x_y_w_h();
-
         let frame_rate = self.style.frame_rate(ui.theme());
         let num = self.sprite.num_in_col() * self.sprite.num_in_row();
         let frame_c = state.frame.clone();
-        let _step = if self.alive {
+        let now = Instant::now();
+        let _step = if now.clone().duration_since(state.last_update) < Duration::new(3, 0) {
             if frame_c <= num as f32 {
-                state.update(|state| state.frame += frame_rate);
+                state.update(|state| {
+                                 state.frame += frame_rate;
+                                 state.last_update = now;
+                             });
                 Some((frame_c.floor() as u16 % num) as f64)
             } else {
                 state.update(|state| state.frame = 0.0);
                 Some(0.0)
             }
         } else {
-            state.update(|state| state.frame = 0.0);
+            state.update(|state| {
+                             state.frame = 0.0;
+                             state.last_update = now;
+                         });
             Some(0.0)
         };
+
         let s = self.sprite;
         if let Some(_s) = _step {
-            let (x, y) = (_s % s.num_in_row() as f64, (_s / (s.num_in_row() as f64)).floor());
-            let r = Rect::from_corners([s.first().0 + x * s.w_h().0 + s.pad().0,
-                                        s.first().1 - y * s.w_h().1 - s.pad().2],
-                                       [s.first().0 + (x + 1.0) * s.w_h().0 - s.pad().1,
-                                        s.first().1 - (y + 1.0) * s.w_h().1 + s.pad().3]);
-
+            let r = spriteable_rect(s, _s);
             widget::Image::new(self.image)
-                .source_rectangle(r)
+                .source_rectangle(Rect::from_corners(r.0, r.1))
                 .w_h(w, h)
                 .middle_of(id)
                 .parent(id)

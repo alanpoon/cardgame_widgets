@@ -1,15 +1,17 @@
-use conrod::{self, widget, Positionable, Widget, Sizeable, text, image};
-use sprite::SpriteInfo;
+use conrod::{self, widget, Positionable, Widget, Sizeable, text, image, Rect};
+use sprite::{spriteable_rect, Spriteable};
 /// The type upon which we'll implement the `Widget` trait.
 #[derive(WidgetCommon)]
-pub struct BackCardView<'a> {
+pub struct BackCardView<'a, H>
+    where H: Spriteable
+{
     /// An object that handles some of the dirty work of rendering a GUI. We don't
     /// really have to worry about it.
     #[conrod(common_builder)]
     common: widget::CommonBuilder,
     pub card_image: image::Id,
     pub card_index: f64,
-    pub card_sprite: SpriteInfo,
+    pub card_sprite: H,
     pub name: &'a str,
     /// See the Style struct below.
     style: Style,
@@ -43,13 +45,11 @@ pub struct State {
     ids: Ids,
 }
 
-impl<'a> BackCardView<'a> {
+impl<'a, H> BackCardView<'a, H>
+    where H: Spriteable
+{
     /// Create a button context to be built upon.
-    pub fn new(card_image: image::Id,
-               card_index: f64,
-               card_sprite: SpriteInfo,
-               name: &'a str)
-               -> Self {
+    pub fn new(card_image: image::Id, card_index: f64, card_sprite: H, name: &'a str) -> Self {
         BackCardView {
             card_image: card_image,
             card_index: card_index,
@@ -69,7 +69,9 @@ impl<'a> BackCardView<'a> {
 
 /// A custom Conrod widget must implement the Widget trait. See the **Widget** trait
 /// documentation for more details.
-impl<'a> Widget for BackCardView<'a> {
+impl<'a, H> Widget for BackCardView<'a, H>
+    where H: Spriteable
+{
     /// The State struct that we defined above.
     type State = State;
     /// The Style struct that we defined using the `widget_style!` macro.
@@ -93,9 +95,9 @@ impl<'a> Widget for BackCardView<'a> {
         let widget::UpdateArgs { state, rect, ui, .. } = args;
 
         let (_, _, _, h) = rect.x_y_w_h();
-
+        let r = spriteable_rect(self.card_sprite, self.card_index);
         widget::Image::new(self.card_image)
-            .source_rectangle(self.card_sprite.src_rect(self.card_index))
+            .source_rectangle(Rect::from_corners(r.0, r.1))
             .mid_top()
             .h(0.7 * h)
             .padded_w_of(state.ids.frame, 5.0)

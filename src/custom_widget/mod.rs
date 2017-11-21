@@ -14,3 +14,4 @@ pub mod image_hover;
 pub mod shuffle;
 pub mod animated_canvas;
 pub mod full_cycle_sprite;
+pub mod bordered_image;

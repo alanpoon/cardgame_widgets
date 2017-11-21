@@ -1,16 +1,18 @@
-use conrod::{self, widget, Positionable, Widget, image, Sizeable};
-use sprite::SpriteInfo;
+use conrod::{self, widget, Positionable, Widget, image, Sizeable, Rect};
+use sprite::{spriteable_rect, Spriteable};
 
 /// The type upon which we'll implement the `Widget` trait.
 #[derive(WidgetCommon)]
-pub struct CardViewPartial<'a> {
+pub struct CardViewPartial<'a, H>
+    where H: Spriteable + Clone
+{
     /// An object that handles some of the dirty work of rendering a GUI. We don't
     /// really have to worry about it.
     #[conrod(common_builder)]
     common: widget::CommonBuilder,
     pub image: image::Id,
     card_style_t: usize,
-    pub vec_style: Vec<SpriteInfo>,
+    pub vec_sprite: Vec<H>,
     pub card_index: f64,
     pub name: &'a str,
     /// See the Style struct below.
@@ -43,18 +45,20 @@ pub struct State {
     ids: Ids,
 }
 
-impl<'a> CardViewPartial<'a> {
+impl<'a, H> CardViewPartial<'a, H>
+    where H: Spriteable + Clone
+{
     /// Create a button context to be built upon.
     pub fn new(image: image::Id,
                card_style_t: usize,
-               vec_style: Vec<SpriteInfo>,
+               vec_sprite: Vec<H>,
                card_index: f64,
                name: &'a str)
                -> Self {
         CardViewPartial {
             image: image,
             card_style_t: card_style_t,
-            vec_style: vec_style,
+            vec_sprite: vec_sprite,
             card_index: card_index,
             name: name,
             common: widget::CommonBuilder::default(),
@@ -71,7 +75,9 @@ impl<'a> CardViewPartial<'a> {
 
 /// A custom Conrod widget must implement the Widget trait. See the **Widget** trait
 /// documentation for more details.
-impl<'a> Widget for CardViewPartial<'a> {
+impl<'a, H> Widget for CardViewPartial<'a, H>
+    where H: Spriteable + Clone
+{
     /// The State struct that we defined above.
     type State = State;
     /// The Style struct that we defined using the `widget_style!` macro.
@@ -105,10 +111,10 @@ impl<'a> Widget for CardViewPartial<'a> {
             Interaction::Press => (w, h),
         };
 
-        let _style = self.vec_style[self.card_style_t];
-        let te = _style.src_rect(self.card_index as f64);
+        let _sprite = self.vec_sprite[self.card_style_t].clone();
+        let r = spriteable_rect(_sprite, self.card_index as f64);
         widget::Image::new(self.image)
-            .source_rectangle(te)
+            .source_rectangle(Rect::from_corners(r.0, r.1))
             .w_h(wh_rect.0, wh_rect.1)
             .middle()
             .parent(id)
