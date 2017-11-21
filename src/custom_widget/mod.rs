@@ -15,3 +15,4 @@ pub mod shuffle;
 pub mod animated_canvas;
 pub mod full_cycle_sprite;
 pub mod bordered_image;
+pub mod image_panels;

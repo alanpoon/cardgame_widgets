@@ -9,7 +9,7 @@ pub struct BorderedImage {
     #[conrod(common_builder)]
     common: widget::CommonBuilder,
     pub image_id: image::Id,
-    pub src_rect: ([f64; 2], [f64; 2]),
+    pub src_rect: Option<([f64; 2], [f64; 2])>,
     pub bordered: bool,
     /// See the Style struct below.
     style: Style,
@@ -39,10 +39,10 @@ pub struct State {
 
 impl BorderedImage {
     /// Create a button context to be built upon.
-    pub fn new(image_id: image::Id, _rect: ([f64; 2], [f64; 2])) -> Self {
+    pub fn new(image_id: image::Id) -> Self {
         BorderedImage {
             image_id: image_id,
-            src_rect: _rect,
+            src_rect: None,
             common: widget::CommonBuilder::default(),
             bordered: false,
             style: Style::default(),
@@ -54,6 +54,10 @@ impl BorderedImage {
     }
     pub fn bordered(mut self) -> Self {
         self.bordered = true;
+        self
+    }
+    pub fn source_rectangle(mut self, _rect: ([f64; 2], [f64; 2])) -> Self {
+        self.src_rect = Some(_rect);
         self
     }
 }
@@ -106,11 +110,11 @@ impl Widget for BorderedImage {
             .set(state.ids.rect, ui);
         }
 
-        widget::Image::new(self.image_id).middle_of(id)
-        //.parent(id)
-        .padded_wh_of(id,border)
-        .source_rectangle(Rect::from_corners(self.src_rect.0,self.src_rect.1))
-        .set(state.ids.image,ui);
+        let mut j = widget::Image::new(self.image_id).middle_of(id).padded_wh_of(id, border);
+        if let Some(_src_rect) = self.src_rect {
+            j = j.source_rectangle(Rect::from_corners(_src_rect.0, _src_rect.1));
+        }
+        j.set(state.ids.image, ui);
         Some(())
     }
 }
