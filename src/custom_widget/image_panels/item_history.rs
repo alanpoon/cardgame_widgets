@@ -1,8 +1,7 @@
-use conrod::{image, widget, Colorable, Positionable, Widget, Sizeable, color};
+use conrod::{widget, Positionable, Widget, Sizeable, color, Rect, Scalar, Color, Colorable};
 use std;
 use custom_widget::bordered_image::BorderedImage;
-use custom_widget::image_panels::panel::Panelable;
-use std::collections::HashSet;
+use custom_widget::image_panels::Panelable;
 /// The type upon which we'll implement the `Widget` trait.
 #[derive(WidgetCommon)]
 pub struct ItemHistory<'a, P>
@@ -12,7 +11,7 @@ pub struct ItemHistory<'a, P>
     /// really have to worry about it.
     #[conrod(common_builder)]
     common: widget::CommonBuilder,
-    pub panel_info: P,
+    pub panel_info: &'a mut P,
     /// See the Style struct below.
     style: Style,
 }
@@ -20,7 +19,7 @@ pub struct ItemHistory<'a, P>
 #[derive(Copy, Clone, Debug, Default, PartialEq, WidgetStyle)]
 pub struct Style {
     #[conrod(default="(color::BLUE,[200.0,30.0,2.0])")]
-    pub item_rect: Option<(conrod::Color, [f64; 3])>, //w,h, pad bottom
+    pub item_rect: Option<(Color, [f64; 3])>, //w,h, pad bottom
     #[conrod(default="[20.0,20.0,10.0,10.0]")]
     pub display_pic: Option<[f64; 4]>, // w,h,l,t
     #[conrod(default="[100.0,50.0,22.0,5.0]")]
@@ -52,7 +51,7 @@ impl<'a, P> ItemHistory<'a, P>
     where P: Panelable + 'a
 {
     /// Create a button context to be built upon.
-    pub fn new(panel_info: P) -> Self {
+    pub fn new(panel_info: &'a mut P) -> Self {
         ItemHistory {
             panel_info: panel_info,
             common: widget::CommonBuilder::default(),
@@ -61,7 +60,7 @@ impl<'a, P> ItemHistory<'a, P>
     }
 
     builder_methods!{
-        pub item_rect { style.item_rect = Some((conrod::Color,[f64;3])) }
+        pub item_rect { style.item_rect = Some((Color,[f64;3])) }
         pub display_pic { style.display_pic = Some([f64;4]) }
         pub x_item_list { style.x_item_list = Some([f64;4]) }
         pub border { style.border = Some(Scalar) }
@@ -113,7 +112,7 @@ impl<'a, P> Widget for ItemHistory<'a, P>
                 .set(state.ids.display_pic, ui);
         }
         if let Some(_z) = self.panel_info.text() {
-            widget::Text::new(&z)
+            widget::Text::new(&_z)
                 .top_left_with_margins_on(id,
                                           style.display_pic(&ui.theme)[3],
                                           style.display_pic(&ui.theme)[2] +
@@ -131,7 +130,7 @@ impl<'a, P> Widget for ItemHistory<'a, P>
             .set(state.ids.rect, ui);
         let item_h = style.x_item_list(&ui.theme)[0];
         let list_image = self.panel_info.list_image().clone();
-        let (mut events, scrollbar) = widget::ListSelect::single(list_image.len())
+        let (mut events, scrollbar) = widget::ListSelect::multiple(list_image.len())
             .flow_right()
             .item_size(item_h)
             .scrollbar_next_to()
@@ -139,16 +138,15 @@ impl<'a, P> Widget for ItemHistory<'a, P>
             .top_left_with_margins_on(state.ids.rect,
                                       style.x_item_list(&ui.theme)[3],
                                       style.x_item_list(&ui.theme)[2])
-            .set(ids.image_panel, ui);
-        while let Some(event) = events.next(ui, |i| self.panel_info.list_selected().contains(&i)) {
+            .set(state.ids.image_panel, ui);
+        let list_selected = self.panel_info.list_selected().clone();
+        let list_image_c = self.panel_info.list_image().clone();
+        while let Some(event) = events.next(ui, |i| list_selected.contains(&i)) {
             use conrod::widget::list_select::Event;
             match event {
                 // For the `Item` events we instantiate the `List`'s items.
                 Event::Item(item) => {
-                    let (ref _image_id, ref _rect) = &self.panel_info
-                                                          .list_image()
-                                                          .get(item.i)
-                                                          .unwrap();
+                    let &(ref _image_id, ref _rect) = list_image_c.get(item.i).unwrap();
                     let _rect_c = _rect.clone();
                     let mut j = match self.panel_info.list_selected().contains(&item.i) {
                         true => BorderedImage::new(_image_id.clone()).bordered(),
@@ -171,7 +169,9 @@ impl<'a, P> Widget for ItemHistory<'a, P>
                 event => println!("{:?}", &event),
             }
         }
-        widget::Scrollbar::y_axis(state.ids.rect).auto_hide(false).set(state.ids.scrollbar, ui);
+        if let Some(s) = scrollbar {
+            s.set(ui);
+        }
 
         Some(())
     }

@@ -1,17 +1,12 @@
-use conrod::{self, widget, Colorable, Positionable, Widget, Sizeable, color};
+use conrod::{self, widget, Positionable, Widget, Sizeable, color,image,Scalar,Color};
 use custom_widget::image_panels::item_history;
 use std;
 use std::collections::HashSet;
-pub trait Panelable<'a> {
-    fn text(&self) -> Option<String>;
-    fn display_pic(&self) -> Option<(image::Id, ([f64; 2], [f64; 2]))>;
-    fn list_image(&self) -> Vec<image::Id, ([f64; 2], [f64; 2])>;
-    fn list_selected(&self) -> &'a mut HashSet<usize, (image::Id, ([f64; 2], [f64; 2]))>;
-}
+
 /// The type upon which we'll implement the `Widget` trait.
 #[derive(WidgetCommon)]
-pub struct ImagePanels<'a, P>
-    where P: Panelable + 'a
+pub struct ImagePanels<P>
+    where P: Panelable
 {
     /// An object that handles some of the dirty work of rendering a GUI. We don't
     /// really have to worry about it.
@@ -54,11 +49,11 @@ pub struct State {
     ids: Ids,
 }
 
-impl<'a, P> ImagePanels<'a, P>
-    where P: Panelable + 'a
+impl<P> ImagePanels<P>
+    where P: Panelable
 {
     /// Create a button context to be built upon.
-    pub fn new(panel_infos: P) -> Self {
+    pub fn new(panel_infos: Vec<P>) -> Self {
         ImagePanels {
             panel_infos: panel_infos,
             common: widget::CommonBuilder::default(),
@@ -78,8 +73,8 @@ impl<'a, P> ImagePanels<'a, P>
 
 /// A custom Conrod widget must implement the Widget trait. See the **Widget** trait
 /// documentation for more details.
-impl<'a, P> Widget for ImagePanels<'a, P>
-    where P: Panelable + 'a
+impl<P> Widget for ImagePanels<P>
+    where P: Panelable
 {
     /// The State struct that we defined above.
     type State = State;
@@ -106,13 +101,14 @@ impl<'a, P> Widget for ImagePanels<'a, P>
         let (mut items, scrollbar) = widget::List::flow_down(self.panel_infos.len())
             .item_size(y_item_height)
             .scrollbar_on_top()
-            .middle_of(ids)
-            .wh_of(ids)
-            .set(ids.panel, ui);
-        let mut panel_iter = self.panel_infos.iter();
-        while let (Some(item), Some(_panel)) = (items.next(ui), panel_iter.next()) {
-            let i = item.i;
-            item_history::ItemHistory::new(_panel)
+            .middle_of(id)
+            .wh_of(id)
+            .set(state.ids.panel, ui);
+        let mut panel_iter = self.panel_infos.iter_mut();
+        while let (Some(item), Some(ref mut _panel)) = (items.next(ui), panel_iter.next()) {
+            //let i = item.i;
+            let j = item_history::ItemHistory::new(_panel);
+            item.set(j,ui);
         }
 
         if let Some(s) = scrollbar {

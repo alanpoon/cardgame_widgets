@@ -148,7 +148,7 @@ fn set_widgets(ui: &mut conrod::UiCell,
     }
     while let Some(item) = items.next(ui) {
         let j = BorderedImage::new(rust_logo)
-            .source_rectangle([0.0, 0.0], [144.0, 144.0])
+            .source_rectangle(Rect::from_corners([0.0, 0.0], [144.0, 144.0]))
             .border_color(color::YELLOW)
             .border(20.0)
             .bordered()

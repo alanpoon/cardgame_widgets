@@ -9,7 +9,7 @@ pub struct BorderedImage {
     #[conrod(common_builder)]
     common: widget::CommonBuilder,
     pub image_id: image::Id,
-    pub src_rect: Option<([f64; 2], [f64; 2])>,
+    pub src_rect: Option<Rect>,
     pub bordered: bool,
     /// See the Style struct below.
     style: Style,
@@ -56,7 +56,7 @@ impl BorderedImage {
         self.bordered = true;
         self
     }
-    pub fn source_rectangle(mut self, _rect: ([f64; 2], [f64; 2])) -> Self {
+    pub fn source_rectangle(mut self, _rect: Rect) -> Self {
         self.src_rect = Some(_rect);
         self
     }
@@ -112,7 +112,7 @@ impl Widget for BorderedImage {
 
         let mut j = widget::Image::new(self.image_id).middle_of(id).padded_wh_of(id, border);
         if let Some(_src_rect) = self.src_rect {
-            j = j.source_rectangle(Rect::from_corners(_src_rect.0, _src_rect.1));
+            j = j.source_rectangle(_src_rect);
         }
         j.set(state.ids.image, ui);
         Some(())
