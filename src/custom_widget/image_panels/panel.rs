@@ -1,18 +1,17 @@
-use conrod::{self, widget, Positionable, Widget, Sizeable, color,image,Scalar,Color};
-use custom_widget::image_panels::item_history;
+use conrod::{self, widget, Positionable, Widget, Sizeable, color, Scalar, Color};
+use custom_widget::image_panels::{item_history, Panelable};
 use std;
-use std::collections::HashSet;
 
 /// The type upon which we'll implement the `Widget` trait.
 #[derive(WidgetCommon)]
-pub struct ImagePanels<P>
-    where P: Panelable
+pub struct ImagePanels<'b, P>
+    where P: Panelable + 'b
 {
     /// An object that handles some of the dirty work of rendering a GUI. We don't
     /// really have to worry about it.
     #[conrod(common_builder)]
     common: widget::CommonBuilder,
-    pub panel_infos: Vec<P>,
+    pub panel_infos: &'b mut Vec<P>,
     /// See the Style struct below.
     style: Style,
 }
@@ -49,11 +48,11 @@ pub struct State {
     ids: Ids,
 }
 
-impl<P> ImagePanels<P>
-    where P: Panelable
+impl<'b, P> ImagePanels<'b, P>
+    where P: Panelable + 'b
 {
     /// Create a button context to be built upon.
-    pub fn new(panel_infos: Vec<P>) -> Self {
+    pub fn new(panel_infos: &'b mut Vec<P>) -> Self {
         ImagePanels {
             panel_infos: panel_infos,
             common: widget::CommonBuilder::default(),
@@ -73,8 +72,8 @@ impl<P> ImagePanels<P>
 
 /// A custom Conrod widget must implement the Widget trait. See the **Widget** trait
 /// documentation for more details.
-impl<P> Widget for ImagePanels<P>
-    where P: Panelable
+impl<'b, P> Widget for ImagePanels<'b, P>
+    where P: Panelable + 'b
 {
     /// The State struct that we defined above.
     type State = State;
@@ -96,7 +95,7 @@ impl<P> Widget for ImagePanels<P>
     /// Update the state of the button by handling any input that has occurred since the last
     /// update.
     fn update(self, args: widget::UpdateArgs<Self>) -> std::option::Option<()> {
-        let widget::UpdateArgs { id, state, ui, rect, style, .. } = args;
+        let widget::UpdateArgs { id, state, ui, style, .. } = args;
         let y_item_height = style.y_item_height(&ui.theme);
         let (mut items, scrollbar) = widget::List::flow_down(self.panel_infos.len())
             .item_size(y_item_height)
@@ -107,8 +106,8 @@ impl<P> Widget for ImagePanels<P>
         let mut panel_iter = self.panel_infos.iter_mut();
         while let (Some(item), Some(ref mut _panel)) = (items.next(ui), panel_iter.next()) {
             //let i = item.i;
-            let j = item_history::ItemHistory::new(_panel);
-            item.set(j,ui);
+            let j = item_history::ItemHistory::new(*_panel);
+            item.set(j, ui);
         }
 
         if let Some(s) = scrollbar {
