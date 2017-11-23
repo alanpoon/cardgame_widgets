@@ -12,36 +12,36 @@ use conrod::event;
 use std::time::Instant;
 use std::collections::hash_map::RandomState;
 use std::collections::HashSet;
-use cardgame_widgets::custom_widget::image_panels::{Panelable, ImagePanels};
+use cardgame_widgets::custom_widget::image_panels::{Panelable, ImagePanels,ImageRectType};
 widget_ids! {
     pub struct Ids {
          master,
          panel,
     }
 }
-pub type image_id_rect = (conrod::image::Id, Option<([f64; 2], [f64; 2])>);
-pub struct Panel_Info {
+
+pub struct Panel_Info<'a> {
     text: Option<String>,
-    display_pic: Option<image_id_rect>,
-    list_image: Vec<image_id_rect>,
-    list_selected: &mut HashSet<usize, RandomState>,
+    display_pic: Option<ImageRectType>,
+    list_image: Vec<ImageRectType>,
+    list_selected: &'a mut HashSet<usize, RandomState>,
 }
-impl Panelable for Panel_Info {
+impl<'a> Panelable<'a> for Panel_Info<'a> {
     fn text(&self) -> Option<String> {
         self.text
     }
-    fn display_pic(&self) -> Option<image_id_rect> {
+    fn display_pic(&self) -> Option<ImageRectType> {
         self.display_pic
     }
-    fn list_image(&self) -> Vec<image_id_rect> {
+    fn list_image(&self) -> Vec<ImageRectType> {
         self.list_image
     }
-    fn list_selected(&self) -> &mut HashSet<usize, RandomState> {
+    fn list_selected(&self) -> &'a mut HashSet<usize, RandomState> {
         self.list_selected
     }
 }
 pub struct App {
-    normal_stuff: [(Option<String>, Option<image_id_rect>, Vec<image_id_rect>); 4],
+    normal_stuff: [(Option<String>, Option<ImageRectType>, Vec<ImageRectType>); 4],
     list_selecteds: [HashSet<usize, RandomState>; 4],
 }
 #[derive(Clone)]

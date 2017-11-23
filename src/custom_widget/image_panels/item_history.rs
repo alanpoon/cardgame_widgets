@@ -5,7 +5,7 @@ use custom_widget::image_panels::Panelable;
 /// The type upon which we'll implement the `Widget` trait.
 #[derive(WidgetCommon)]
 pub struct ItemHistory<'a, P>
-    where P: Panelable + 'a
+    where P: Panelable<'a> + 'a
 {
     /// An object that handles some of the dirty work of rendering a GUI. We don't
     /// really have to worry about it.
@@ -48,7 +48,7 @@ pub struct State {
 }
 
 impl<'a, P> ItemHistory<'a, P>
-    where P: Panelable + 'a
+    where P: Panelable<'a> + 'a
 {
     /// Create a button context to be built upon.
     pub fn new(panel_info: &'a mut P) -> Self {
@@ -71,7 +71,7 @@ impl<'a, P> ItemHistory<'a, P>
 /// A custom Conrod widget must implement the Widget trait. See the **Widget** trait
 /// documentation for more details.
 impl<'a, P> Widget for ItemHistory<'a, P>
-    where P: Panelable + 'a
+    where P: Panelable<'a> + 'a
 {
     /// The State struct that we defined above.
     type State = State;
@@ -152,11 +152,13 @@ impl<'a, P> Widget for ItemHistory<'a, P>
                         true => BorderedImage::new(_image_id.clone()).bordered(),
                         false => BorderedImage::new(_image_id.clone()),
                     };
-                    j = j.source_rectangle(Rect::from_corners(_rect_c.0, _rect_c.1))
+                    if let Some(_rect) = _rect_c{
+                         j = j.source_rectangle(Rect::from_corners(_rect.0, _rect.1))
                         .border(style.border(&ui.theme))
                         .border_color(style.border_color(&ui.theme))
                         .w_h(style.x_item_list(&ui.theme)[0],
                              style.x_item_list(&ui.theme)[1]);
+                    }
                     item.set(j, ui);
                 }
 
