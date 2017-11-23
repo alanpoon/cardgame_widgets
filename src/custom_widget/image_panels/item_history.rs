@@ -1,7 +1,8 @@
 use conrod::{widget, Positionable, Widget, Sizeable, color, Rect, Scalar, Color, Colorable};
 use std;
 use custom_widget::bordered_image::BorderedImage;
-use custom_widget::image_panels::Panelable;
+use custom_widget::image_panels::{list_select, Panelable};
+
 /// The type upon which we'll implement the `Widget` trait.
 #[derive(WidgetCommon)]
 pub struct ItemHistory<'a, P>
@@ -22,7 +23,7 @@ pub struct Style {
     pub item_rect: Option<(Color, [f64; 3])>, //w,h, pad bottom
     #[conrod(default="[20.0,20.0,10.0,10.0]")]
     pub display_pic: Option<[f64; 4]>, // w,h,l,t
-    #[conrod(default="[100.0,50.0,22.0,5.0]")]
+    #[conrod(default="[100.0,100.0,22.0,5.0]")]
     pub x_item_list: Option<[f64; 4]>, //w,h,l,t
     /// Width of the border surrounding the Image List Item
     #[conrod(default = "theme.border_width")]
@@ -130,7 +131,7 @@ impl<'a, P> Widget for ItemHistory<'a, P>
             .set(state.ids.rect, ui);
         let item_h = style.x_item_list(&ui.theme)[0];
         let list_image = self.panel_info.list_image().clone();
-        let (mut events, scrollbar) = widget::ListSelect::multiple(list_image.len())
+        let (mut events, scrollbar) = list_select::ListSelect::multiple(list_image.len())
             .flow_right()
             .item_size(item_h)
             .scrollbar_next_to()
@@ -142,7 +143,7 @@ impl<'a, P> Widget for ItemHistory<'a, P>
         let list_image_c = self.panel_info.list_image().clone();
 
         while let Some(event) = events.next(ui, |i| self.panel_info.list_selected().contains(&i)) {
-            use conrod::widget::list_select::Event;
+            use self::list_select::Event;
             match event {
                 // For the `Item` events we instantiate the `List`'s items.
                 Event::Item(item) => {
@@ -154,17 +155,19 @@ impl<'a, P> Widget for ItemHistory<'a, P>
                     };
                     if let Some(_rect) = _rect_c {
                         j = j.source_rectangle(Rect::from_corners(_rect.0, _rect.1))
-                            .border(style.border(&ui.theme))
-                            .border_color(style.border_color(&ui.theme))
-                            .w_h(style.x_item_list(&ui.theme)[0],
-                                 style.x_item_list(&ui.theme)[1]);
                     }
+                    j = j.border(style.border(&ui.theme))
+                        .border_color(style.border_color(&ui.theme))
+                        .w_h(style.x_item_list(&ui.theme)[0],
+                             style.x_item_list(&ui.theme)[1]);
+
                     item.set(j, ui);
                 }
 
                 // The selection has changed.
                 Event::Selection(selection) => {
                     selection.update_index_set(self.panel_info.list_selected_mut());
+                    println!("selection {:?}", selection);
                 }
 
                 // The remaining events indicate interactions with the `ListSelect` widget.

@@ -1,6 +1,6 @@
 use conrod::{widget, Positionable, Widget, Sizeable, image, Color, Rect, Scalar};
 use conrod::widget::Rectangle;
-
+use conrod::UiCell;
 /// The type upon which we'll implement the `Widget` trait.
 #[derive(WidgetCommon)]
 pub struct BorderedImage {
@@ -36,7 +36,27 @@ widget_ids! {
 pub struct State {
     ids: Ids,
 }
+#[derive(Clone, Debug)]
+#[allow(missing_copy_implementations)]
+pub struct TimesClicked(pub u16);
+impl TimesClicked {
+    /// `true` if the `AnimatedButton` was clicked one or more times.
+    pub fn was_clicked(self) -> bool {
+        self.0 > 0
+    }
+}
 
+impl Iterator for TimesClicked {
+    type Item = ();
+    fn next(&mut self) -> Option<Self::Item> {
+        if self.0 > 0 {
+            self.0 -= 1;
+            Some(())
+        } else {
+            None
+        }
+    }
+}
 impl BorderedImage {
     /// Create a button context to be built upon.
     pub fn new(image_id: image::Id) -> Self {
@@ -72,7 +92,7 @@ impl Widget for BorderedImage {
     /// The event produced by instantiating the widget.
     ///
     /// `Some` when clicked, otherwise `None`.
-    type Event = Option<()>;
+    type Event = TimesClicked;
 
     fn init_state(&self, id_gen: widget::id::Generator) -> Self::State {
         State { ids: Ids::new(id_gen) }
@@ -86,7 +106,7 @@ impl Widget for BorderedImage {
     /// update.
     fn update(self, args: widget::UpdateArgs<Self>) -> Self::Event {
         let widget::UpdateArgs { id, state, rect, ui, .. } = args;
-
+        let (_interaction, times_triggered) = interaction_and_times_triggered(id, ui);
         // Finally, we'll describe how we want our widget drawn by simply instantiating the
         // necessary primitive graphics widgets.
         //
@@ -114,7 +134,24 @@ impl Widget for BorderedImage {
         if let Some(_src_rect) = self.src_rect {
             j = j.source_rectangle(_src_rect);
         }
-        j.set(state.ids.image, ui);
-        Some(())
+        j.parent(id).graphics_for(id).set(state.ids.image, ui);
+        TimesClicked(times_triggered)
     }
+}
+fn interaction_and_times_triggered(button_id: widget::Id, ui: &UiCell) -> (Interaction, u16) {
+    let input = ui.widget_input(button_id);
+    let interaction = input.mouse().map_or(Interaction::Idle,
+                                           |mouse| if mouse.buttons.left().is_down() {
+                                               Interaction::Press
+                                           } else {
+                                               Interaction::Hover
+                                           });
+    let times_triggered = (input.clicks().left().count() + input.taps().count()) as u16;
+    (interaction, times_triggered)
+}
+#[derive(Copy, Clone)]
+enum Interaction {
+    Idle,
+    Hover,
+    Press,
 }

@@ -6,46 +6,24 @@ extern crate cardgame_widgets;
 extern crate find_folder;
 extern crate image;
 pub mod support;
-use conrod::{widget, color, Colorable, Widget, Positionable, Sizeable};
+use conrod::{widget, color, Colorable, Widget, Positionable, Sizeable, Borderable};
 use conrod::backend::glium::glium::{self, glutin, Surface};
 use conrod::event;
 use std::time::Instant;
 use std::collections::hash_map::RandomState;
 use std::collections::HashSet;
 use cardgame_widgets::custom_widget::image_panels::{Panelable, ImagePanels, ImageRectType};
+use cardgame_widgets::custom_widget::bordered_image::BorderedImage;
 widget_ids! {
     pub struct Ids {
          master,
          panel,
     }
 }
-#[derive(Debug)]
-pub struct Panel_Info<'a> {
-    text: Option<String>,
-    display_pic: Option<ImageRectType>,
-    list_image: Vec<ImageRectType>,
-    list_selected: &'a mut HashSet<usize, RandomState>,
-}
-impl<'b> Panelable for Panel_Info<'b> {
-    fn text(&self) -> Option<String> {
-        self.text.clone()
-    }
-    fn display_pic(&self) -> Option<ImageRectType> {
-        self.display_pic
-    }
-    fn list_image(&self) -> Vec<ImageRectType> {
-        self.list_image.clone()
-    }
-    fn list_selected<'a>(&'a self) -> &'a HashSet<usize, RandomState> {
-        &self.list_selected
-    }
-    fn list_selected_mut<'a>(&'a mut self) -> &'a mut HashSet<usize, RandomState> {
-        self.list_selected
-    }
-}
+
 pub struct App {
-    normal_stuff: Vec<(Option<String>, Option<ImageRectType>, Vec<ImageRectType>)>,
-    list_selecteds: Vec<HashSet<usize, RandomState>>,
+    normal_stuff: (Option<String>, Option<ImageRectType>, Vec<ImageRectType>),
+    list_selecteds: HashSet<usize, RandomState>,
 }
 #[derive(Clone)]
 pub enum ConrodMessage {
@@ -76,19 +54,10 @@ fn main() {
     let mut captured_event: Option<ConrodMessage> = None;
     let sixteen_ms = std::time::Duration::from_millis(800);
     let mut app = App {
-        normal_stuff: vec![(Some("ALAN".to_string()),
-                            Some((rust_logo, None)),
-                            vec![(rust_logo, None), (rust_logo, None)]),
-                           (Some("JAMES".to_string()),
-                            Some((rust_logo, None)),
-                            vec![(rust_logo, None)]),
-                           (Some("MELON".to_string()),
-                            Some((rust_logo, None)),
-                            vec![(rust_logo, None)]),
-                           (Some("OUT".to_string()),
-                            Some((rust_logo, None)),
-                            vec![(rust_logo, None)])],
-        list_selecteds: vec![HashSet::new(), HashSet::new(), HashSet::new(), HashSet::new()],
+        normal_stuff: (Some("ALAN".to_string()),
+                       Some((rust_logo, None)),
+                       vec![(rust_logo, None), (rust_logo, None)]),
+        list_selecteds: HashSet::new(),
     };
 
     'render: loop {
@@ -179,23 +148,43 @@ fn set_widgets(ui: &mut conrod::UiCell,
                _app: &mut App,
                rust_logo: conrod::image::Id) {
     widget::Canvas::new().color(color::LIGHT_BLUE).set(ids.master, ui);
-    let normal_stuff_c = _app.normal_stuff.clone();
-    let mut vec_p = normal_stuff_c.iter()
-        .zip(_app.list_selecteds.iter_mut())
-        .map(|(normal, list_selected)| {
-            Panel_Info {
-                text: normal.0.clone(),
-                display_pic: normal.1.clone(),
-                list_image: normal.2.clone(),
-                list_selected: list_selected,
-            }
-        })
-        .collect::<Vec<Panel_Info>>();
-    ImagePanels::new(&mut vec_p)
+    let item_h = 30.0;
+    let (mut events, _) = widget::ListSelect::multiple(_app.normal_stuff.2.len())
         .middle_of(ids.master)
+         .flow_right()
+        .item_size(item_h)
+        .scrollbar_next_to()
+        //.w_h(400.0, 230.0)
+        //.top_left_with_margins_on(ids.canvas, 40.0, 40.0)
         .padded_wh_of(ids.master, 20.0)
         .set(ids.panel, ui);
-    println!("vec_p {:?}", vec_p);
+    while let Some(event) = events.next(ui, |i| _app.list_selecteds.contains(&i)) {
+        use conrod::widget::list_select::Event;
+        match event {
+
+            // For the `Item` events we instantiate the `List`'s items.
+            Event::Item(item) => {
+                let mut j = BorderedImage::new(rust_logo);
+                j = match _app.list_selecteds.contains(&item.i) {
+                    true => j.bordered(),
+                    false => j,
+                };
+                j = j.border(20.0).border_color(color::YELLOW).w_h(260.0, 200.0);
+                //  let j = widget::Button::image(rust_logo)
+                //          .w_h(260.0,200.0);
+                item.set(j, ui);
+            }
+
+            // The selection has changed.
+            Event::Selection(selection) => {
+                selection.update_index_set(&mut _app.list_selecteds);
+                println!("selected indices: {:?}", _app.list_selecteds);
+            }
+
+            // The remaining events indicate interactions with the `ListSelect` widget.
+            event => println!("{:?}", &event),
+        }
+    }
 }
 fn load_image(display: &glium::Display, path: &str) -> glium::texture::Texture2d {
     let rgba_image = support::assets::load_image(path).to_rgba();

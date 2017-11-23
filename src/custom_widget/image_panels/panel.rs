@@ -27,7 +27,7 @@ pub struct Style {
     /// Weight, height of the display pic, left top from corner
     #[conrod(default="[100.0,50.0,22.0,5.0]")]
     pub x_item_list: Option<[f64; 4]>, //w,h,l,t
-    #[conrod(default="260.0")]
+    #[conrod(default="190.0")]
     pub y_item_height: Option<f64>,
     /// Width of the border surrounding the Image List Item
     #[conrod(default = "theme.border_width")]

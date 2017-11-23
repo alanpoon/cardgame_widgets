@@ -3,6 +3,7 @@ use std::collections::HashSet;
 use std::collections::hash_map::RandomState;
 pub mod item_history;
 pub mod panel;
+pub mod list_select;
 pub use custom_widget::image_panels::item_history::ItemHistory;
 pub use custom_widget::image_panels::panel::ImagePanels;
 pub type ImageRectType = (image::Id, Option<([f64; 2], [f64; 2])>);
