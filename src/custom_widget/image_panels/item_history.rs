@@ -5,7 +5,7 @@ use custom_widget::image_panels::Panelable;
 /// The type upon which we'll implement the `Widget` trait.
 #[derive(WidgetCommon)]
 pub struct ItemHistory<'a, P>
-    where P: Panelable<'a> + 'a
+    where P: Panelable + 'a
 {
     /// An object that handles some of the dirty work of rendering a GUI. We don't
     /// really have to worry about it.
@@ -48,7 +48,7 @@ pub struct State {
 }
 
 impl<'a, P> ItemHistory<'a, P>
-    where P: Panelable<'a> + 'a
+    where P: Panelable + 'a
 {
     /// Create a button context to be built upon.
     pub fn new(panel_info: &'a mut P) -> Self {
@@ -71,7 +71,7 @@ impl<'a, P> ItemHistory<'a, P>
 /// A custom Conrod widget must implement the Widget trait. See the **Widget** trait
 /// documentation for more details.
 impl<'a, P> Widget for ItemHistory<'a, P>
-    where P: Panelable<'a> + 'a
+    where P: Panelable + 'a
 {
     /// The State struct that we defined above.
     type State = State;
@@ -139,9 +139,9 @@ impl<'a, P> Widget for ItemHistory<'a, P>
                                       style.x_item_list(&ui.theme)[3],
                                       style.x_item_list(&ui.theme)[2])
             .set(state.ids.image_panel, ui);
-        let list_selected = self.panel_info.list_selected().clone();
         let list_image_c = self.panel_info.list_image().clone();
-        while let Some(event) = events.next(ui, |i| list_selected.contains(&i)) {
+
+        while let Some(event) = events.next(ui, |i| self.panel_info.list_selected().contains(&i)) {
             use conrod::widget::list_select::Event;
             match event {
                 // For the `Item` events we instantiate the `List`'s items.
@@ -152,19 +152,19 @@ impl<'a, P> Widget for ItemHistory<'a, P>
                         true => BorderedImage::new(_image_id.clone()).bordered(),
                         false => BorderedImage::new(_image_id.clone()),
                     };
-                    if let Some(_rect) = _rect_c{
-                         j = j.source_rectangle(Rect::from_corners(_rect.0, _rect.1))
-                        .border(style.border(&ui.theme))
-                        .border_color(style.border_color(&ui.theme))
-                        .w_h(style.x_item_list(&ui.theme)[0],
-                             style.x_item_list(&ui.theme)[1]);
+                    if let Some(_rect) = _rect_c {
+                        j = j.source_rectangle(Rect::from_corners(_rect.0, _rect.1))
+                            .border(style.border(&ui.theme))
+                            .border_color(style.border_color(&ui.theme))
+                            .w_h(style.x_item_list(&ui.theme)[0],
+                                 style.x_item_list(&ui.theme)[1]);
                     }
                     item.set(j, ui);
                 }
 
                 // The selection has changed.
                 Event::Selection(selection) => {
-                    selection.update_index_set(&mut self.panel_info.list_selected());
+                    selection.update_index_set(self.panel_info.list_selected_mut());
                 }
 
                 // The remaining events indicate interactions with the `ListSelect` widget.
@@ -174,7 +174,6 @@ impl<'a, P> Widget for ItemHistory<'a, P>
         if let Some(s) = scrollbar {
             s.set(ui);
         }
-
         Some(())
     }
 }

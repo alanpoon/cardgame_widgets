@@ -5,7 +5,7 @@ use std;
 /// The type upon which we'll implement the `Widget` trait.
 #[derive(WidgetCommon)]
 pub struct ImagePanels<'b, P>
-    where P: Panelable<'b> + 'b
+    where P: Panelable + 'b
 {
     /// An object that handles some of the dirty work of rendering a GUI. We don't
     /// really have to worry about it.
@@ -49,7 +49,7 @@ pub struct State {
 }
 
 impl<'b, P> ImagePanels<'b, P>
-    where P: Panelable<'b> + 'b
+    where P: Panelable + 'b
 {
     /// Create a button context to be built upon.
     pub fn new(panel_infos: &'b mut Vec<P>) -> Self {
@@ -73,7 +73,7 @@ impl<'b, P> ImagePanels<'b, P>
 /// A custom Conrod widget must implement the Widget trait. See the **Widget** trait
 /// documentation for more details.
 impl<'b, P> Widget for ImagePanels<'b, P>
-    where P: Panelable<'b> + 'b
+    where P: Panelable + 'b
 {
     /// The State struct that we defined above.
     type State = State;
@@ -104,9 +104,9 @@ impl<'b, P> Widget for ImagePanels<'b, P>
             .wh_of(id)
             .set(state.ids.panel, ui);
         let mut panel_iter = self.panel_infos.iter_mut();
-        while let (Some(item), Some(ref mut _panel)) = (items.next(ui), panel_iter.next()) {
+        while let (Some(item), Some(_panel)) = (items.next(ui), panel_iter.next()) {
             //let i = item.i;
-            let j = item_history::ItemHistory::new(*_panel);
+            let j = item_history::ItemHistory::new(_panel);
             item.set(j, ui);
         }
 

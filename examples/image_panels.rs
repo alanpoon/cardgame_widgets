@@ -12,7 +12,7 @@ use conrod::event;
 use std::time::Instant;
 use std::collections::hash_map::RandomState;
 use std::collections::HashSet;
-use cardgame_widgets::custom_widget::image_panels::{Panelable, ImagePanels,ImageRectType};
+use cardgame_widgets::custom_widget::image_panels::{Panelable, ImagePanels, ImageRectType};
 widget_ids! {
     pub struct Ids {
          master,
@@ -26,23 +26,26 @@ pub struct Panel_Info<'a> {
     list_image: Vec<ImageRectType>,
     list_selected: &'a mut HashSet<usize, RandomState>,
 }
-impl<'a> Panelable<'a> for Panel_Info<'a> {
+impl<'b> Panelable for Panel_Info<'b> {
     fn text(&self) -> Option<String> {
-        self.text
+        self.text.clone()
     }
     fn display_pic(&self) -> Option<ImageRectType> {
         self.display_pic
     }
     fn list_image(&self) -> Vec<ImageRectType> {
-        self.list_image
+        self.list_image.clone()
     }
-    fn list_selected(&self) -> &'a mut HashSet<usize, RandomState> {
+    fn list_selected<'a>(&'a self) -> &'a HashSet<usize, RandomState> {
+        &self.list_selected
+    }
+    fn list_selected_mut<'a>(&'a mut self) -> &'a mut HashSet<usize, RandomState> {
         self.list_selected
     }
 }
 pub struct App {
-    normal_stuff: [(Option<String>, Option<ImageRectType>, Vec<ImageRectType>); 4],
-    list_selecteds: [HashSet<usize, RandomState>; 4],
+    normal_stuff: Vec<(Option<String>, Option<ImageRectType>, Vec<ImageRectType>)>,
+    list_selecteds: Vec<HashSet<usize, RandomState>>,
 }
 #[derive(Clone)]
 pub enum ConrodMessage {
@@ -73,17 +76,19 @@ fn main() {
     let mut captured_event: Option<ConrodMessage> = None;
     let sixteen_ms = std::time::Duration::from_millis(800);
     let mut app = App {
-        normal_stuff: [(Some("ALAN".to_string()),
-                        Some((rust_logo, None)),
-                        vec![(rust_logo, None)]),
-                       (Some("JAMES".to_string()),
-                        Some((rust_logo, None)),
-                        vec![(rust_logo, None)]),
-                       (Some("MELON".to_string()),
-                        Some((rust_logo, None)),
-                        vec![(rust_logo, None)]),
-                       (Some("OUT".to_string()), Some((rust_logo, None)), vec![(rust_logo, None)])],
-        list_selecteds: [HashSet::new(); 4],
+        normal_stuff: vec![(Some("ALAN".to_string()),
+                            Some((rust_logo, None)),
+                            vec![(rust_logo, None)]),
+                           (Some("JAMES".to_string()),
+                            Some((rust_logo, None)),
+                            vec![(rust_logo, None)]),
+                           (Some("MELON".to_string()),
+                            Some((rust_logo, None)),
+                            vec![(rust_logo, None)]),
+                           (Some("OUT".to_string()),
+                            Some((rust_logo, None)),
+                            vec![(rust_logo, None)])],
+        list_selecteds: vec![HashSet::new(), HashSet::new(), HashSet::new(), HashSet::new()],
     };
 
     'render: loop {
@@ -177,12 +182,12 @@ fn set_widgets(ui: &mut conrod::UiCell,
     let normal_stuff_c = _app.normal_stuff.clone();
     let mut vec_p = normal_stuff_c.iter()
         .zip(_app.list_selecteds.iter_mut())
-        .map(|&(ref normal, ref mut list_selected)| {
+        .map(|(normal, list_selected)| {
             Panel_Info {
                 text: normal.0.clone(),
                 display_pic: normal.1.clone(),
                 list_image: normal.2.clone(),
-                list_selecteds: list_selected,
+                list_selected: list_selected,
             }
         })
         .collect::<Vec<Panel_Info>>();
