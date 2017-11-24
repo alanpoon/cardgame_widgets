@@ -118,7 +118,8 @@ impl<'a, P> Widget for ItemHistory<'a, P>
                                           style.display_pic(&ui.theme)[3],
                                           style.display_pic(&ui.theme)[2] +
                                           style.display_pic(&ui.theme)[0])
-                .w(120.0)
+                .w(140.0)
+                .h(40.0)
                 .set(state.ids.text, ui);
         }
 

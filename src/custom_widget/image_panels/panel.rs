@@ -25,7 +25,7 @@ pub struct Style {
     #[conrod(default="[20.0,20.0,10.0,10.0]")]
     pub display_pic: Option<[f64; 4]>, // w,h,l,t
     /// Weight, height of the display pic, left top from corner
-    #[conrod(default="[100.0,50.0,22.0,5.0]")]
+    #[conrod(default="[100.0,100.0,22.0,5.0]")]
     pub x_item_list: Option<[f64; 4]>, //w,h,l,t
     #[conrod(default="190.0")]
     pub y_item_height: Option<f64>,
