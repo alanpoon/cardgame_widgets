@@ -195,7 +195,7 @@ fn set_widgets(ui: &mut conrod::UiCell,
         .middle_of(ids.master)
         .padded_wh_of(ids.master, 20.0)
         .y_item_height(170.0)
-        .x_item_list([100.0,100.0,22.0,5.0])
+        .x_item_list([100.0, 100.0, 22.0, 5.0])
         .set(ids.panel, ui);
     println!("vec_p {:?}", vec_p);
 }

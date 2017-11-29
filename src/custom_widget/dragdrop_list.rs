@@ -21,18 +21,14 @@ pub struct DragDropList<'a, T, W>
     values: &'a mut Vec<T>,
     widget_closure: Box<Fn(T) -> W>,
     item_width: f64,
-}
-
-#[derive(Copy, Clone, Debug, Default, PartialEq, WidgetStyle)]
-pub struct Style {
-    #[conrod(default = "theme.shape_color")]
-    pub color: Option<conrod::Color>,
-    #[conrod(default="None")]
-    pub exit_id: Option<Option<widget::Id>>,
+    item_instantiation: widget::list::ItemInstantiation,
+    exit_id: Option<widget::Id>,
+    color: Option<conrod::Color>,
 }
 
 widget_ids! {
     struct Ids {
+      list,
       items[],
       rect
     }
@@ -185,11 +181,39 @@ impl<'a, T, W> DragDropList<'a, T, W>
     pub fn new(values: &'a mut Vec<T>, widget_closure: Box<Fn(T) -> W>, item_width: f64) -> Self {
         DragDropList {
             common: widget::CommonBuilder::default(),
-            style: Style::default(),
+            style: widget::list::Style::default(),
             values: values,
             widget_closure: widget_closure,
             item_width: item_width,
+            item_instantiation: widget::list::ItemInstantiation::OnlyVisible,
         }
+    }
+    pub fn instantiate_all_items(mut self) -> Self {
+        self.item_instantiation = widget::list::ItemInstantiation::All;
+        self
+    }
+    pub fn scrollbar_next_to(mut self) -> Self {
+        self.style.scrollbar_position = Some(Some(widget::list::ScrollbarPosition::NextTo));
+        self
+    }
+
+    /// Specifies that the `List` should be scrollable and should provide a `Scrollbar` that hovers
+    /// above the right edge of the items and automatically hides when the user is not scrolling.
+    pub fn scrollbar_on_top(mut self) -> Self {
+        self.style.scrollbar_position = Some(Some(widget::list::ScrollbarPosition::OnTop));
+        self
+    }
+
+    /// The width of the `Scrollbar`.
+    pub fn scrollbar_thickness(mut self, w: Scalar) -> Self {
+        self.style.scrollbar_thickness = Some(Some(w));
+        self
+    }
+
+    /// The color of the `Scrollbar`.
+    pub fn scrollbar_color(mut self, color: Color) -> Self {
+        self.style.scrollbar_color = Some(color);
+        self
     }
     builder_methods!{
         pub exit_id { style.exit_id = Option<Option<widget::Id>> }
@@ -204,12 +228,12 @@ impl<'a, T, W> Widget for DragDropList<'a, T, W>
 {
     /// The State struct that we defined above.
     type State = State<T>;
-    /// The Style struct that we defined using the `widget_style!` macro.
-    type Style = Style;
+    /// The Style struct that we defined using from wigetList.
+    type Style = widget::list::Style;
     /// The event produced by instantiating the widget.
     ///
     /// `Some` when an element exited, otherwise `None`.
-    type Event = Option<T>;
+    type Event = (Option<T>, Option<widget::list::Scrollbar<widget::list::Right>>);
 
     fn init_state(&self, id_gen: widget::id::Generator) -> Self::State {
         let now = std::time::Instant::now();
@@ -236,6 +260,17 @@ impl<'a, T, W> Widget for DragDropList<'a, T, W>
             let id_gen = &mut ui.widget_id_generator();
             state.update(|state| state.ids.items.resize(self.values.len(), id_gen));
         }
+        let mut list = widget::List::<widget::list::Right, _>::from_item_size(self.values.len(),
+                                                                              self.item_width);
+        let scrollbar_position = style.scrollbar_position(&ui.theme);
+        list = match scrollbar_position {
+            Some(widget::list::ScrollbarPosition::OnTop) => list.scrollbar_on_top(),
+            Some(widget::list::ScrollbarPosition::NextTo) => list.scrollbar_next_to(),
+            None => list,
+        };
+        list.item_instantiation = self.item_instantiation;
+        list.style = style.clone();
+        let (mut items, scrollbar) = list.middle_of(id).wh_of(id).set(state.ids.list, ui);
         let value_c = self.values.clone();
         widget::Rectangle::fill([w, h])
             .middle_of(id)
@@ -249,7 +284,7 @@ impl<'a, T, W> Widget for DragDropList<'a, T, W>
                 }
             }
         }
-        let mut items = Items {
+        /*  let mut items = Items {
             list_id: id,
             item_indices: item_idx_range.clone(),
             next_item_indices_index: 0,
@@ -257,7 +292,8 @@ impl<'a, T, W> Widget for DragDropList<'a, T, W>
             first_left_id: None,
             total_w: w,
             acc_w: 0.0,
-        };
+        };*/
+
         let mut c = 0;
 
         let mut values_c_iter = value_c.iter();
@@ -355,7 +391,7 @@ impl<'a, T, W> Widget for DragDropList<'a, T, W>
 
             }
         }
-        exit_id
+        (exit_id, scrollbar)
     }
 }
 impl<'a, T, W> Colorable for DragDropList<'a, T, W>

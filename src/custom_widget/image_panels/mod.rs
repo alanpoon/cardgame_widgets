@@ -6,7 +6,7 @@ pub mod panel;
 pub mod list_select;
 pub use custom_widget::image_panels::item_history::ItemHistory;
 pub use custom_widget::image_panels::panel::ImagePanels;
-pub type ImageRectType = (image::Id, Option<([f64; 2], [f64; 2])>,usize); //usize is the index
+pub type ImageRectType = (image::Id, Option<([f64; 2], [f64; 2])>, usize); //usize is the index
 pub trait Panelable {
     fn text(&self) -> Option<String>;
     fn display_pic(&self) -> Option<ImageRectType>;

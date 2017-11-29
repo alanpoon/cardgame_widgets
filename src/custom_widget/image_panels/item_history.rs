@@ -99,7 +99,7 @@ impl<'a, P> Widget for ItemHistory<'a, P>
         // necessary primitive graphics widgets.
         //
 
-        if let Some((k, _rect,_)) = self.panel_info.display_pic() {
+        if let Some((k, _rect, _)) = self.panel_info.display_pic() {
             let j = if let Some(_rect) = _rect {
                 widget::Image::new(k).source_rectangle(Rect::from_corners(_rect.0, _rect.1))
             } else {
@@ -148,7 +148,7 @@ impl<'a, P> Widget for ItemHistory<'a, P>
             match event {
                 // For the `Item` events we instantiate the `List`'s items.
                 Event::Item(item) => {
-                    let &(ref _image_id, ref _rect,_) = list_image_c.get(item.i).unwrap();
+                    let &(ref _image_id, ref _rect, _) = list_image_c.get(item.i).unwrap();
                     let _rect_c = _rect.clone();
                     let mut j = match self.panel_info.list_selected().contains(&item.i) {
                         true => BorderedImage::new(_image_id.clone()).bordered(),
