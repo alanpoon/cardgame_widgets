@@ -352,7 +352,6 @@ impl<'a, T> Widget for Canvas<'a, T>
                 state.frame / frame_rate
             }
         };
-
         widget::BorderedRectangle::new(dim)
             .color(color)
             .border(border)

@@ -548,16 +548,13 @@ impl Mode for Multiple {
     fn click_selection<F, D, S>(&self,
                                 click: event::Click,
                                 i: usize,
-                                num_items: usize,
+                                _num_items: usize,
                                 state: &State,
                                 is_selected: F,
                                 pending: &mut PendingEvents<Self::Selection, D, S>)
         where F: Fn(usize) -> bool
     {
         let shift = click.modifiers.contains(input::keyboard::ModifierKey::SHIFT);
-        let alt = click.modifiers.contains(input::keyboard::ModifierKey::ALT) ||
-                  click.modifiers.contains(input::keyboard::ModifierKey::CTRL);
-
         let event = match state.last_selected_entry.get() {
 
             Some(idx) if shift => {

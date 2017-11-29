@@ -1,4 +1,4 @@
-use conrod::{self, widget, Positionable, Widget, Labelable, Colorable};
+use conrod::{self, widget, Positionable, Widget, Labelable, Colorable,Sizeable};
 use conrod::widget::{Rectangle, Oval};
 use conrod::widget::button::{Button, Flat};
 pub trait Instructable<'a> {
@@ -120,7 +120,6 @@ impl<'a, I> Widget for InstructionSet<'a, I>
         let mut print = true;
         let style = self.style;
         let ((_x, _y, w, h), _parent_id) = if let Some(Some(_parent_id)) = style.parent_id {
-            println!("there is parent_id");
             (ui.rect_of(_parent_id).unwrap().x_y_w_h(), _parent_id)
         } else {
             (rect.x_y_w_h(), id)
@@ -135,10 +134,11 @@ impl<'a, I> Widget for InstructionSet<'a, I>
             _rect.set(state.ids.frame, ui);
             let (_rx, _ry, _rw, _rh) = ui.rect_of(state.ids.frame).unwrap().x_y_w_h();
             let font_id = style.label_font_id(&ui.theme).or(ui.fonts.ids().next());
-            widget::Text::new(_label)
-                .and_then(font_id, widget::Text::font_id)
+            widget::TextEdit::new(_label)
+                .font_id(font_id.unwrap())
                 .color(style.label_color(&ui.theme))
                 .font_size(style.label_font_size(&ui.theme))
+                .padded_wh_of(state.ids.frame,0.1 * _rw)
                 .top_left_with_margins_on(state.ids.frame, 0.1 * _rh, 0.1 * _rw)
                 .set(state.ids.instruction, ui);
 
