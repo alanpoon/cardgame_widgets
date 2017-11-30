@@ -6,7 +6,7 @@ extern crate cardgame_widgets;
 extern crate find_folder;
 extern crate image;
 pub mod support;
-use conrod::{widget, color, Colorable, Widget, Positionable, Sizeable};
+use conrod::{widget, color, Colorable, Widget, Positionable, Sizeable, Labelable};
 use conrod::backend::glium::glium::{self, glutin, Surface};
 use conrod::event;
 
@@ -42,7 +42,7 @@ fn main() {
     // construct our `Ui`.
     let (screen_w, screen_h) = display.get_framebuffer_dimensions();
     let mut ui = conrod::UiBuilder::new([screen_w as f64, screen_h as f64]).build();
-
+    
     let rust_logo = load_image(&display, "images/rust.png");
     let green_logo = load_image(&display, "images/green.png");
     let spinner_logo = load_image(&display, "images/download.png");
@@ -167,8 +167,8 @@ fn set_widgets(ui: &mut conrod::UiCell,
         .top_right_of(ids.master)
         .color(color::GREEN)
         .set(ids.exit_id, ui);
-    let spinner_rect = spinner_sprite();
-    let (exitable,_scroll) = DragDropList::new(&mut app.hash,
+ let spinner_rect = spinner_sprite();
+    let exitable = DragDropList::new(&mut app.hash,
                                      Box::new(move |v| {
         let j = Button::image(rust_logo.clone())
             .toggle_image(green_logo.clone())
@@ -179,7 +179,7 @@ fn set_widgets(ui: &mut conrod::UiCell,
                                      50.0)
             .wh([400.0, 400.0])
             .color(color::RED)
-            .exit_id(ids.exit_id)
+            .exit_id(Some(Some(ids.exit_id)))
             .middle_of(ids.master)
             .set(ids.wraplist, ui);
     if let Some(exitable) = exitable {

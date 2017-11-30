@@ -1,4 +1,4 @@
-use conrod::{self, widget, Positionable, Widget, Colorable,Color,Sizeable};
+use conrod::{self, widget, Positionable, Widget, Ui, UiCell, Colorable};
 use std;
 use conrod::position::Scalar;
 use std::fmt::Debug;
@@ -10,25 +10,29 @@ pub trait Draggable {
 #[derive(WidgetCommon)]
 pub struct DragDropList<'a, T, W>
     where T: Clone + Send + 'a + Debug,
-          W: Widget + Draggable,
+          W: Widget + Draggable
 {
     /// An object that handles some of the dirty work of rendering a GUI. We don't
     /// really have to worry about it.
     #[conrod(common_builder)]
     common: widget::CommonBuilder,
     /// See the Style struct below.
-    style:  widget::list::Style,
+    style: Style,
     values: &'a mut Vec<T>,
     widget_closure: Box<Fn(T) -> W>,
-    item_size:widget::list::Fixed,
-    item_instantiation: widget::list::ItemInstantiation,
-    exit_id: Option<widget::Id>,
-    color: Option<conrod::Color>,
+    item_width: f64,
+}
+
+#[derive(Copy, Clone, Debug, Default, PartialEq, WidgetStyle)]
+pub struct Style {
+    #[conrod(default = "theme.shape_color")]
+    pub color: Option<conrod::Color>,
+    #[conrod(default="None")]
+    pub exit_id: Option<Option<widget::Id>>,
 }
 
 widget_ids! {
     struct Ids {
-      list,
       items[],
       rect
     }
@@ -41,62 +45,155 @@ pub struct State<T> {
     last_release: Option<std::time::Instant>,
     mouse_point: Option<(usize, conrod::position::Point)>,
 }
+/// The data necessary for instantiating a single item within a `List`.
+#[derive( Debug)]
+pub struct Item<'a> {
+    pub i: usize,
+    pub total_w: f64,
+    pub acc_w: &'a mut f64,
+    /// The id generated for the widget.
+    pub widget_id: widget::Id,
+    pub last_id: Option<widget::Id>,
+    pub parent_id: widget::Id,
+    pub first_left_id: &'a mut Option<widget::Id>,
+}
+impl<'a> Item<'a> {
+    /// Sets the given widget as the widget to use for the item.
+    ///
+    /// Sets the:
+    /// - position of the widget.
+    /// - dimensions of the widget.
+    /// - parent of the widget.
+    /// - and finally sets the widget within the `Ui`.
+    pub fn set<W>(self, widget: W, width: Scalar, ui: &mut UiCell) -> widget::Id
+        where W: Widget
+    {
+        let Item { total_w, widget_id, last_id, parent_id, .. } = self;
+        let acc_w_c = self.acc_w.clone();
+        let first_left_id_c = self.first_left_id.clone();
 
+        if acc_w_c + width > total_w {
+            *(self.acc_w) = width;
+            widget.and(|w| down_position_item(w, first_left_id_c, parent_id, 0.0))
+                .and(|w| {
+                         *(self.first_left_id) = Some(widget_id);
+                         w
+                     })
+                .set(widget_id, ui);
+
+
+        } else {
+            *(self.acc_w) = acc_w_c + width;
+            if let None = last_id {
+                *(self.first_left_id) = Some(widget_id);
+            }
+            widget.and(|w| right_position_item(w, last_id, parent_id, 0.0)).set(widget_id, ui);
+        }
+        widget_id
+    }
+}
+fn down_position_item<W>(widget: W,
+                         last_id: Option<widget::Id>,
+                         parent_id: widget::Id,
+                         first_item_margin: Scalar)
+                         -> W
+    where W: Widget
+{
+    match last_id {
+        None => {
+            widget.mid_top_with_margin_on(parent_id, first_item_margin).align_left_of(parent_id)
+        }
+        Some(id) => widget.down_from(id, 0.0),
+    }
+}
+
+fn right_position_item<W>(widget: W,
+                          last_id: Option<widget::Id>,
+                          parent_id: widget::Id,
+                          first_item_margin: Scalar)
+                          -> W
+    where W: Widget
+{
+    match last_id {
+        None => {
+            widget.mid_left_with_margin_on(parent_id, first_item_margin).align_top_of(parent_id)
+        }
+        Some(id) => widget.right_from(id, 0.0),
+    }
+}
+pub struct Items {
+    item_indices: std::ops::Range<usize>,
+    next_item_indices_index: usize,
+    list_id: widget::Id,
+    last_id: Option<widget::Id>,
+    total_w: f64,
+    first_left_id: Option<widget::Id>,
+    acc_w: f64,
+}
+
+impl Items {
+    /// Yield the next `Item` in the list.
+    pub fn next<T>(&mut self, state: &State<T>, _ui: &Ui) -> Option<Item>
+        where T: Clone + Send + 'static + Debug
+    {
+
+        let Items { ref mut item_indices,
+                    ref mut next_item_indices_index,
+                    ref mut last_id,
+                    ref mut total_w,
+                    ref mut acc_w,
+                    ref mut first_left_id,
+                    list_id } = *self;
+
+
+        // Retrieve the `node_index` that was generated for the next `Item`.
+        let node_index = match state.ids
+                  .items
+                  .get(*next_item_indices_index)
+                  .map(|&id| id) {
+            Some(node_index) => {
+                *next_item_indices_index += 1;
+                Some(node_index)
+            }
+            None => return None,
+        };
+
+        match (item_indices.next(), node_index) {
+            (Some(i), Some(node_index)) => {
+                let item = Item {
+                    i: i,
+                    last_id: *last_id,
+                    widget_id: node_index,
+                    parent_id: list_id,
+                    first_left_id: first_left_id,
+                    total_w: *total_w,
+                    acc_w: acc_w,
+                };
+                *last_id = Some(node_index);
+                Some(item)
+            }
+            _ => None,
+        }
+    }
+}
 
 impl<'a, T, W> DragDropList<'a, T, W>
     where T: Clone + Send + 'a + Debug,
           W: Widget + Draggable
 {
     /// Create a button context to be built upon.
-    pub fn new(values: &'a mut Vec<T>, widget_closure: Box<Fn(T) -> W>, item_size: Scalar) -> Self {
+    pub fn new(values: &'a mut Vec<T>, widget_closure: Box<Fn(T) -> W>, item_width: f64) -> Self {
         DragDropList {
             common: widget::CommonBuilder::default(),
-            style: widget::list::Style::default(),
+            style: Style::default(),
             values: values,
             widget_closure: widget_closure,
-            item_size: widget::list::Fixed{length:item_size},
-            item_instantiation: widget::list::ItemInstantiation::OnlyVisible,
-            color:None,
-            exit_id:None
+            item_width: item_width,
         }
     }
-   
-    pub fn exit_id(mut self,id:widget::Id)->Self{
-        self.exit_id = Some(id);
-        self
+    builder_methods!{
+        pub exit_id { style.exit_id = Option<Option<widget::Id>> }
     }
-    pub fn instantiate_all_items(mut self) -> Self {
-        self.item_instantiation = widget::list::ItemInstantiation::All;
-        self
-    }
-    pub fn item_size(mut self,length:Scalar)->Self{
-        self.item_size = widget::list::Fixed { length: length };
-        self
-    }
-    pub fn scrollbar_next_to(mut self) -> Self {
-        self.style.scrollbar_position = Some(Some(widget::list::ScrollbarPosition::NextTo));
-        self
-    }
-
-    /// Specifies that the `List` should be scrollable and should provide a `Scrollbar` that hovers
-    /// above the right edge of the items and automatically hides when the user is not scrolling.
-    pub fn scrollbar_on_top(mut self) -> Self {
-        self.style.scrollbar_position = Some(Some(widget::list::ScrollbarPosition::OnTop));
-        self
-    }
-
-    /// The width of the `Scrollbar`.
-    pub fn scrollbar_thickness(mut self, w: Scalar) -> Self {
-        self.style.scrollbar_thickness = Some(Some(w));
-        self
-    }
-
-    /// The color of the `Scrollbar`.
-    pub fn scrollbar_color(mut self, color: Color) -> Self {
-        self.style.scrollbar_color = Some(color);
-        self
-    }
-
 }
 
 /// A custom Conrod widget must implement the Widget trait. See the **Widget** trait
@@ -107,12 +204,12 @@ impl<'a, T, W> Widget for DragDropList<'a, T, W>
 {
     /// The State struct that we defined above.
     type State = State<T>;
-    /// The Style struct that we defined using from wigetList.
-    type Style = widget::list::Style;
+    /// The Style struct that we defined using the `widget_style!` macro.
+    type Style = Style;
     /// The event produced by instantiating the widget.
     ///
     /// `Some` when an element exited, otherwise `None`.
-    type Event = (Option<T>, Option<widget::list::Scrollbar<conrod::scroll::X>>);
+    type Event = Option<T>;
 
     fn init_state(&self, id_gen: widget::id::Generator) -> Self::State {
         let now = std::time::Instant::now();
@@ -134,36 +231,17 @@ impl<'a, T, W> Widget for DragDropList<'a, T, W>
         let widget::UpdateArgs { id, state, rect, ui, style, .. } = args;
         let w = rect.w();
         let h = rect.h();
-
+        let item_idx_range = 0..self.values.len();
         if state.ids.items.len() < self.values.len() {
             let id_gen = &mut ui.widget_id_generator();
             state.update(|state| state.ids.items.resize(self.values.len(), id_gen));
         }
-        let mut list = widget::List::<widget::list::Right, _>::from_item_size(self.values.len(),
-                                                                              self.item_size);
-        let scrollbar_position = style.scrollbar_position(&ui.theme);
-        list = match scrollbar_position {
-            Some(widget::list::ScrollbarPosition::OnTop) => list.scrollbar_on_top(),
-            Some(widget::list::ScrollbarPosition::NextTo) => list.scrollbar_next_to(),
-            None => list,
-        };
-        list.item_instantiation = self.item_instantiation;
-        list.style = style.clone();
-        
         let value_c = self.values.clone();
-       if let Some(_color) = self.color{
-          widget::Rectangle::fill([w, h])
-            .middle_of(id)
-            .graphics_for(id)
-            .color(_color)
-            .set(state.ids.rect, ui);
-       } else{
         widget::Rectangle::fill([w, h])
             .middle_of(id)
             .graphics_for(id)
+            .color(style.color(&ui.theme))
             .set(state.ids.rect, ui);
-       }
-       let (mut items, scrollbar) = list.middle_of(id).wh_of(id).set(state.ids.list, ui);
         if state.temp.len() < value_c.len() {
             for _i in state.temp.len()..value_c.len() {
                 if let Some(_v) = value_c.get(_i) {
@@ -171,18 +249,26 @@ impl<'a, T, W> Widget for DragDropList<'a, T, W>
                 }
             }
         }
-     
+        let mut items = Items {
+            list_id: id,
+            item_indices: item_idx_range.clone(),
+            next_item_indices_index: 0,
+            last_id: None,
+            first_left_id: None,
+            total_w: w,
+            acc_w: 0.0,
+        };
         let mut c = 0;
 
         let mut values_c_iter = value_c.iter();
         if let Some(_) = state.last_release {
             while let (Some(item), Some(k_h)) =
-                (items.next(ui), values_c_iter.next()) {
+                (items.next::<T>(&state, ui), values_c_iter.next()) {
                 let widget = (*self.widget_closure)(k_h.clone());
-                 item.set(widget,  ui);
+                let k = item.set(widget, self.item_width, ui);
                 state.update(|state| {
                                  if let Some(a) = state.temp.get_mut(c) {
-                                     *a = (Some(item.widget_id), k_h.clone());
+                                     *a = (Some(k), k_h.clone());
                                  }
                                  state.last_release = None;
                              });
@@ -192,9 +278,9 @@ impl<'a, T, W> Widget for DragDropList<'a, T, W>
 
         } else {
             while let (Some(item), Some(k_h)) =
-                (items.next(ui), values_c_iter.next()) {
+                (items.next::<T>(&state, ui), values_c_iter.next()) {
                 let widget = (*self.widget_closure)(k_h.clone());
-                item.set(widget.draggable(true), ui);
+                item.set(widget.draggable(true), self.item_width, ui);
                 c += 1;
             }
         }
@@ -239,7 +325,7 @@ impl<'a, T, W> Widget for DragDropList<'a, T, W>
 
                 }
                 let mut rearrange_bool = false;
-                if let Some(exit_rect) = self.exit_id {
+                if let Some(Some(exit_rect)) = style.exit_id {
                     if ui.rect_of(exit_rect).unwrap().is_over(m_point) {
                         rearrange_bool = false;
                         state.update(|state| {
@@ -269,16 +355,15 @@ impl<'a, T, W> Widget for DragDropList<'a, T, W>
 
             }
         }
-        (exit_id, scrollbar)
+        exit_id
     }
 }
 impl<'a, T, W> Colorable for DragDropList<'a, T, W>
     where T: Clone + Send + 'a + 'static + Debug,
           W: Widget + Draggable
-          
 {
     fn color(mut self, color: conrod::Color) -> Self {
-        self.color = Some(color);
+        self.style.color = Some(color);
         self
     }
 }

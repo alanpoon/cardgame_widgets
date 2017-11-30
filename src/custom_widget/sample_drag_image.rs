@@ -147,6 +147,7 @@ impl<H> Widget for Button<Image<H>>
                            style.color(&ui.theme),
                            style,
                            ui);
+                           
         let draw_spinner_index = update_toggle_bool_spinner_index(&mut drag, &mut toggle_bool);
         state.update(|state| {
                          state.drag = drag;
@@ -161,9 +162,9 @@ impl<H> Widget for Button<Image<H>>
         let (x, y, w, h) = rect.x_y_w_h();
         let mut image = widget::Image::new(widget_image)
             .x_y(x, y)
-            .top_right_with_margins_on(id, h * 0.2, w * 0.2)
-            .w_h(w * 0.6, h * 0.6)
-            .parent(id);
+            .middle_of(id)
+            .wh_of(id)
+            .parent(id)
             .graphics_for(id);
         if let Some(_rect) = show.source_rectangle {
             image = image.source_rectangle(_rect);
