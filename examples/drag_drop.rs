@@ -42,7 +42,7 @@ fn main() {
     // construct our `Ui`.
     let (screen_w, screen_h) = display.get_framebuffer_dimensions();
     let mut ui = conrod::UiBuilder::new([screen_w as f64, screen_h as f64]).build();
-    
+
     let rust_logo = load_image(&display, "images/rust.png");
     let green_logo = load_image(&display, "images/green.png");
     let spinner_logo = load_image(&display, "images/download.png");
@@ -167,12 +167,12 @@ fn set_widgets(ui: &mut conrod::UiCell,
         .top_right_of(ids.master)
         .color(color::GREEN)
         .set(ids.exit_id, ui);
- let spinner_rect = spinner_sprite();
+    let spinner_rect = spinner_sprite();
     let exitable = DragDropList::new(&mut app.hash,
                                      Box::new(move |v| {
         let j = Button::image(rust_logo.clone())
             .toggle_image(green_logo.clone())
-            .spinner_image(spinner_logo.clone(),spinner_rect)
+            .spinner_image(spinner_logo.clone(), spinner_rect)
             .w_h(100.0, 300.0);
         j.color(v)
     }),

@@ -30,7 +30,27 @@ widget_ids! {
 pub struct State {
     ids: Ids,
 }
+#[derive(Clone, Debug)]
+#[allow(missing_copy_implementations)]
+pub struct TimesClicked(pub u16);
+impl TimesClicked {
+    /// `true` if the `AnimatedButton` was clicked one or more times.
+    pub fn was_clicked(self) -> bool {
+        self.0 > 0
+    }
+}
 
+impl Iterator for TimesClicked {
+    type Item = ();
+    fn next(&mut self) -> Option<Self::Item> {
+        if self.0 > 0 {
+            self.0 -= 1;
+            Some(())
+        } else {
+            None
+        }
+    }
+}
 impl<H> ImageHover<H>
     where H: Hoverable
 {
@@ -56,7 +76,7 @@ impl<H> Widget for ImageHover<H>
     /// The event produced by instantiating the widget.
     ///
     /// `Some` when clicked, otherwise `None`.
-    type Event = Option<()>;
+    type Event = TimesClicked;
 
     fn init_state(&self, id_gen: widget::id::Generator) -> Self::State {
         State { ids: Ids::new(id_gen) }
@@ -88,7 +108,7 @@ impl<H> Widget for ImageHover<H>
             .graphics_for(id)
             .set(state.ids.bottle0, ui);
 
-        Some(())
+        TimesClicked(_times_triggered)
     }
 }
 
