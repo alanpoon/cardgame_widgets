@@ -163,7 +163,7 @@ impl<H> Widget for Button<Image<H>>
             .x_y(x, y)
             .top_right_with_margins_on(id, h * 0.2, w * 0.2)
             .w_h(w * 0.6, h * 0.6)
-            .parent(id)
+            .parent(id);
             .graphics_for(id);
         if let Some(_rect) = show.source_rectangle {
             image = image.source_rectangle(_rect);

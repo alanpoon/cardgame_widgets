@@ -6,12 +6,13 @@ extern crate cardgame_widgets;
 extern crate find_folder;
 extern crate image;
 pub mod support;
-use conrod::{widget, color, Colorable, Widget, Positionable, Sizeable, Labelable};
+use conrod::{widget, color, Colorable, Widget, Positionable, Sizeable};
 use conrod::backend::glium::glium::{self, glutin, Surface};
 use conrod::event;
 
 use cardgame_widgets::custom_widget::dragdrop_list::DragDropList;
 use cardgame_widgets::custom_widget::sample_drag_image::Button;
+use cardgame_widgets::sprite::SpriteInfo;
 use std::time::Instant;
 
 widget_ids! {
@@ -44,7 +45,7 @@ fn main() {
 
     let rust_logo = load_image(&display, "images/rust.png");
     let green_logo = load_image(&display, "images/green.png");
-    let spinner_logo = load_image(&display, "images/download2.png");
+    let spinner_logo = load_image(&display, "images/download.png");
     let events_loop_proxy = events_loop.create_proxy();
     let mut ids = Ids::new(ui.widget_id_generator());
     let mut demo_text_edit = "Click here !".to_owned();
@@ -166,19 +167,19 @@ fn set_widgets(ui: &mut conrod::UiCell,
         .top_right_of(ids.master)
         .color(color::GREEN)
         .set(ids.exit_id, ui);
-
-    let exitable = DragDropList::new(&mut app.hash,
+    let spinner_rect = spinner_sprite();
+    let (exitable,_scroll) = DragDropList::new(&mut app.hash,
                                      Box::new(move |v| {
         let j = Button::image(rust_logo.clone())
             .toggle_image(green_logo.clone())
-            .spinner_image(spinner_logo.clone())
+            .spinner_image(spinner_logo.clone(),spinner_rect)
             .w_h(100.0, 300.0);
         j.color(v)
     }),
                                      50.0)
             .wh([400.0, 400.0])
             .color(color::RED)
-            .exit_id(Some(Some(ids.exit_id)))
+            .exit_id(ids.exit_id)
             .middle_of(ids.master)
             .set(ids.wraplist, ui);
     if let Some(exitable) = exitable {
@@ -192,4 +193,13 @@ fn load_image(display: &glium::Display, path: &str) -> glium::texture::Texture2d
                                                                        image_dimensions);
     let texture = glium::texture::Texture2d::new(display, raw_image).unwrap();
     texture
+}
+pub fn spinner_sprite() -> SpriteInfo {
+    SpriteInfo {
+        first: (0.0, 400.0),
+        num_in_row: 12,
+        num_in_col: 4,
+        w_h: (100.0, 100.0),
+        pad: (0.0, 0.0, 0.0, 0.0),
+    }
 }
