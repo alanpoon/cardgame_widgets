@@ -1,16 +1,14 @@
-use conrod::{self, widget, Positionable, Widget, Colorable, Rect, Sizeable};
+use conrod::{self, widget, Positionable, Widget, Colorable, Rect, Sizeable, Color, color};
 use conrod::widget::envelope_editor::EnvelopePoint;
-use custom_widget::image_hover::{Hoverable, ImageHover};
-
 use std::fmt::Debug;
 use std::marker::Send;
+pub use custom_widget::image_hover::{TimesClicked, Hoverable, ImageHover};
+pub mod item;
+pub use custom_widget::arrange_list::item::ItemWidget;
 pub trait Arrangeable {
-    fn arrangeable(self, bool) -> Self;
-}
-
-pub trait Selectable {
     fn selectable(self) -> Self;
 }
+
 pub enum ExitBy {
     Top,
     Bottom,
@@ -19,7 +17,7 @@ pub enum ExitBy {
 #[derive(WidgetCommon)]
 pub struct ArrangeList<'a, T, W, A>
     where T: Clone + Send + 'a + Debug,
-          W: Widget + Arrangeable + Selectable,
+          W: Widget + Arrangeable,
           A: Hoverable
 {
     /// An object that handles some of the dirty work of rendering a GUI. We don't
@@ -47,6 +45,7 @@ pub struct Style {
 
 widget_ids! {
     struct Ids {
+     test,
       rect,
       list_select,
       left_a,
@@ -64,7 +63,7 @@ pub struct State {
 
 impl<'a, T, W, A> ArrangeList<'a, T, W, A>
     where T: Clone + Send + 'a + Debug,
-          W: Widget + Arrangeable + Selectable,
+          W: Widget + Arrangeable,
           A: Hoverable
 {
     /// Create a button context to be built upon.
@@ -84,13 +83,29 @@ impl<'a, T, W, A> ArrangeList<'a, T, W, A>
     builder_methods!{
         pub spacing {style.spacing=Some(f64)}
     }
+    pub fn left_arrow(mut self, _h: A) -> Self {
+        self.left_arrow = Some(_h);
+        self
+    }
+    pub fn top_arrow(mut self, _h: A) -> Self {
+        self.top_arrow = Some(_h);
+        self
+    }
+    pub fn right_arrow(mut self, _h: A) -> Self {
+        self.right_arrow = Some(_h);
+        self
+    }
+    pub fn bottom_arrow(mut self, _h: A) -> Self {
+        self.bottom_arrow = Some(_h);
+        self
+    }
 }
 
 /// A custom Conrod widget must implement the Widget trait. See the **Widget** trait
 /// documentation for more details.
 impl<'a, T, W, A> Widget for ArrangeList<'a, T, W, A>
     where T: Clone + Send + 'a + 'static + Debug,
-          W: Widget + Arrangeable + Selectable,
+          W: Widget + Arrangeable,
           A: Hoverable
 {
     /// The State struct that we defined above.
@@ -132,6 +147,10 @@ impl<'a, T, W, A> Widget for ArrangeList<'a, T, W, A>
         if let Some(_) = self.bottom_arrow {
             btm_right.set_y(rect.bottom_right().get_y() + spacing);
         }
+        widget::Rectangle::fill_with(rect.dim(), color::GREEN)
+            .middle_of(id)
+            .wh_of(id)
+            .set(state.ids.test, ui);
         let temp_rect = Rect::from_corners(top_left, btm_right);
         widget::Rectangle::fill(temp_rect.dim())
             .top_left_with_margins_on(id,rect.top_left().get_y()-top_left.get_y(),top_left.get_x()-rect.top_left().get_x())
@@ -166,9 +185,8 @@ impl<'a, T, W, A> Widget for ArrangeList<'a, T, W, A>
                         if item.i == _s {
                             widget = widget.selectable();
                         }
-                        item.set(widget, ui);
                     }
-
+                    item.set(widget, ui);
                 }
                 Event::Selection(selected_id) => {
                     state.update(|state| state.selected = Some(selected_id));
@@ -179,6 +197,7 @@ impl<'a, T, W, A> Widget for ArrangeList<'a, T, W, A>
         if let Some(_a) = self.left_arrow {
             let j = ImageHover::new(_a)
                 .w_h(spacing, spacing)
+                .align_middle_y_of(state.ids.rect)
                 .left_from(state.ids.rect, 0.0)
                 .set(state.ids.left_a, ui);
             if let Some(_s) = state.selected {
@@ -196,6 +215,7 @@ impl<'a, T, W, A> Widget for ArrangeList<'a, T, W, A>
         if let Some(_a) = self.top_arrow {
             let j = ImageHover::new(_a)
                 .w_h(spacing, spacing)
+                .align_middle_x_of(state.ids.rect)
                 .up_from(state.ids.rect, 0.0)
                 .set(state.ids.top_a, ui);
             if let Some(_s) = state.selected {
@@ -213,6 +233,7 @@ impl<'a, T, W, A> Widget for ArrangeList<'a, T, W, A>
         if let Some(_a) = self.right_arrow {
             let j = ImageHover::new(_a)
                 .w_h(spacing, spacing)
+                .align_middle_y_of(state.ids.rect)
                 .right_from(state.ids.rect, 0.0)
                 .set(state.ids.right_a, ui);
             if let Some(_s) = state.selected {
@@ -228,8 +249,9 @@ impl<'a, T, W, A> Widget for ArrangeList<'a, T, W, A>
         if let Some(_a) = self.bottom_arrow {
             let j = ImageHover::new(_a)
                 .w_h(spacing, spacing)
+                .align_middle_x_of(state.ids.rect)
                 .down_from(state.ids.rect, 0.0)
-                .set(state.ids.right_a, ui);
+                .set(state.ids.bottom_a, ui);
             if let Some(_s) = state.selected {
                 for _c in j {
                     if self.values.len() > 1 {
@@ -247,7 +269,13 @@ impl<'a, T, W, A> Widget for ArrangeList<'a, T, W, A>
         (exit_elem, exit_by, scrollbar)
     }
 }
-
+impl<'a, T, W, A> Colorable for ArrangeList<'a, T, W, A>
+    where T: Clone + Send + 'a + 'static + Debug,
+          W: Widget + Arrangeable,
+          A: Hoverable
+{
+    builder_method!(color { style.color = Some(Color) });
+}
 fn remove_by_index<T: Clone>(c2: usize, hash: &mut Vec<T>) -> T {
     hash.remove(c2)
 }
