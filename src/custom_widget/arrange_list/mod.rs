@@ -1,5 +1,4 @@
-use conrod::{self, widget, Positionable, Widget, Colorable, Rect, Sizeable, Color, color};
-use conrod::widget::envelope_editor::EnvelopePoint;
+use conrod::{self, widget, Positionable, Widget, Colorable, Sizeable, Color};
 use std::fmt::Debug;
 use std::marker::Send;
 pub use custom_widget::image_hover::{TimesClicked, Hoverable, ImageHover};
@@ -39,8 +38,8 @@ pub struct ArrangeList<'a, T, W, A>
 pub struct Style {
     #[conrod(default = "theme.shape_color")]
     pub color: Option<conrod::Color>,
-    #[conrod(default = "20.0")]
-    pub spacing: Option<f64>,
+    #[conrod(default = "40.0")]
+    pub arrow_size: Option<f64>,
 }
 
 widget_ids! {
@@ -59,6 +58,7 @@ widget_ids! {
 pub struct State {
     ids: Ids,
     selected: Option<usize>,
+    s_widget_id: Option<widget::Id>,
 }
 
 impl<'a, T, W, A> ArrangeList<'a, T, W, A>
@@ -81,7 +81,7 @@ impl<'a, T, W, A> ArrangeList<'a, T, W, A>
         }
     }
     builder_methods!{
-        pub spacing {style.spacing=Some(f64)}
+        pub arrow_size {style.arrow_size=Some(f64)}
     }
     pub fn left_arrow(mut self, _h: A) -> Self {
         self.left_arrow = Some(_h);
@@ -121,6 +121,7 @@ impl<'a, T, W, A> Widget for ArrangeList<'a, T, W, A>
         State {
             ids: Ids::new(id_gen),
             selected: None,
+            s_widget_id: None,
         }
     }
 
@@ -132,29 +133,9 @@ impl<'a, T, W, A> Widget for ArrangeList<'a, T, W, A>
     /// update.
     fn update(self, args: widget::UpdateArgs<Self>) -> Self::Event {
         let widget::UpdateArgs { id, state, rect, ui, style, .. } = args;
-        let spacing = self.style.spacing(&ui.theme());
-        let mut top_left = rect.top_left();
-        let mut btm_right = rect.bottom_right();
-        if let Some(_) = self.left_arrow {
-            top_left.set_x(rect.top_left().get_x() + spacing);
-        }
-        if let Some(_) = self.top_arrow {
-            top_left.set_y(rect.top_left().get_y() - spacing);
-        }
-        if let Some(_) = self.right_arrow {
-            btm_right.set_x(rect.bottom_right().get_x() - spacing);
-        }
-        if let Some(_) = self.bottom_arrow {
-            btm_right.set_y(rect.bottom_right().get_y() + spacing);
-        }
-        widget::Rectangle::fill_with(rect.dim(), color::GREEN)
+        let arrow_size = self.style.arrow_size(&ui.theme());
+        widget::Rectangle::fill(rect.dim())
             .middle_of(id)
-            .wh_of(id)
-            .set(state.ids.test, ui);
-        let temp_rect = Rect::from_corners(top_left, btm_right);
-        widget::Rectangle::fill(temp_rect.dim())
-            .top_left_with_margins_on(id,rect.top_left().get_y()-top_left.get_y(),top_left.get_x()-rect.top_left().get_x())
-            //.top_left_with_margins(top_left.get_y(),top_left.get_x())
             .graphics_for(id)
             .color(style.color(&ui.theme))
             .set(state.ids.rect, ui);
@@ -184,6 +165,7 @@ impl<'a, T, W, A> Widget for ArrangeList<'a, T, W, A>
                     if let Some(_s) = state.selected {
                         if item.i == _s {
                             widget = widget.selectable();
+                            state.update(|state| state.s_widget_id = Some(item.widget_id));
                         }
                     }
                     item.set(widget, ui);
@@ -191,20 +173,25 @@ impl<'a, T, W, A> Widget for ArrangeList<'a, T, W, A>
                 Event::Selection(selected_id) => {
                     state.update(|state| state.selected = Some(selected_id));
                 }
-                event => println!("{:?}", &event),
+                event => {}
             }
         }
-        if let Some(_a) = self.left_arrow {
+        if let (Some(_a), Some(_s_id)) = (self.left_arrow, state.s_widget_id) {
             let j = ImageHover::new(_a)
-                .w_h(spacing, spacing)
-                .align_middle_y_of(state.ids.rect)
-                .left_from(state.ids.rect, 0.0)
+                .w_h(arrow_size, arrow_size)
+                .align_middle_y_of(_s_id)
+                .left_from(_s_id, -arrow_size)
                 .set(state.ids.left_a, ui);
             if let Some(_s) = state.selected {
                 for _c in j {
                     if _s > 0 {
                         rearrange(_s, _s - 1, self.values);
                         state.update(|state| state.selected = Some(_s - 1));
+                    } else {
+                        state.update(|state| {
+                                         state.selected = None;
+                                         state.s_widget_id = None;
+                                     });
                     }
 
                 }
@@ -212,55 +199,66 @@ impl<'a, T, W, A> Widget for ArrangeList<'a, T, W, A>
         }
         let mut exit_elem: Option<T> = None;
         let mut exit_by: ExitBy = ExitBy::Top;
-        if let Some(_a) = self.top_arrow {
+        if let (Some(_a), Some(_s_id)) = (self.top_arrow, state.s_widget_id) {
             let j = ImageHover::new(_a)
-                .w_h(spacing, spacing)
-                .align_middle_x_of(state.ids.rect)
-                .up_from(state.ids.rect, 0.0)
+                .w_h(arrow_size, arrow_size)
+                .align_middle_x_of(_s_id)
+                .up_from(_s_id, -arrow_size)
                 .set(state.ids.top_a, ui);
             if let Some(_s) = state.selected {
                 for _c in j {
                     if self.values.len() > 1 {
                         exit_elem = Some(remove_by_index(_s, self.values));
-                        state.update(|state| state.selected = Some(_s - 1));
+
                     } else if self.values.len() == 1 {
                         exit_elem = Some(remove_by_index(_s, self.values));
-                        state.update(|state| state.selected = None);
+                        state.update(|state| {
+                                         state.selected = None;
+                                         state.s_widget_id = None;
+                                     });
                     }
                 }
             }
         }
-        if let Some(_a) = self.right_arrow {
+        if let (Some(_a), Some(_s_id)) = (self.right_arrow, state.s_widget_id) {
             let j = ImageHover::new(_a)
-                .w_h(spacing, spacing)
-                .align_middle_y_of(state.ids.rect)
-                .right_from(state.ids.rect, 0.0)
+                .w_h(arrow_size, arrow_size)
+                .align_middle_y_of(_s_id)
+                .right_from(_s_id, -arrow_size)
                 .set(state.ids.right_a, ui);
             if let Some(_s) = state.selected {
                 for _c in j {
                     if _s < self.values.len() - 1 {
                         rearrange(_s, _s + 1, self.values);
                         state.update(|state| state.selected = Some(_s + 1));
+                    } else {
+                        state.update(|state| {
+                                         state.selected = None;
+                                         state.s_widget_id = None;
+                                     });
                     }
 
                 }
             }
         }
-        if let Some(_a) = self.bottom_arrow {
+        if let (Some(_a), Some(_s_id)) = (self.bottom_arrow, state.s_widget_id) {
             let j = ImageHover::new(_a)
-                .w_h(spacing, spacing)
-                .align_middle_x_of(state.ids.rect)
-                .down_from(state.ids.rect, 0.0)
+                .w_h(arrow_size, arrow_size)
+                .align_middle_x_of(_s_id)
+                .down_from(_s_id, -arrow_size)
                 .set(state.ids.bottom_a, ui);
             if let Some(_s) = state.selected {
                 for _c in j {
                     if self.values.len() > 1 {
                         exit_elem = Some(remove_by_index(_s, self.values));
-                        state.update(|state| state.selected = Some(_s - 1));
                         exit_by = ExitBy::Bottom;
+
                     } else if self.values.len() == 1 {
                         exit_elem = Some(remove_by_index(_s, self.values));
-                        state.update(|state| state.selected = None);
+                        state.update(|state| {
+                                         state.selected = None;
+                                         state.s_widget_id = None;
+                                     });
                         exit_by = ExitBy::Bottom;
                     }
                 }
