@@ -262,7 +262,7 @@ impl<'a, T> Widget for Canvas<'a, T>
 {
     type State = State<T>;
     type Style = Style;
-    type Event = ();
+    type Event = CanvasY; //true if closed
 
     fn init_state(&self, id_gen: widget::id::Generator) -> Self::State {
         State {
@@ -317,7 +317,7 @@ impl<'a, T> Widget for Canvas<'a, T>
     }
 
     /// Update the state of the Canvas.
-    fn update(self, args: widget::UpdateArgs<Self>) {
+    fn update(self, args: widget::UpdateArgs<Self>) ->Self::Event{
         let widget::UpdateArgs { id, state, rect, mut ui, .. } = args;
         let Canvas { style, maybe_title_bar_label, maybe_splits, .. } = self;
 
@@ -506,6 +506,8 @@ impl<'a, T> Widget for Canvas<'a, T>
                              });
             }
         }
+        
+        CanvasY(state.closing,_step)
     }
 }
 
@@ -561,5 +563,15 @@ impl<'a, T> Labelable<'a> for Canvas<'a, T>
     builder_methods!{
         label_color { style.title_bar_text_color = Some(Color) }
         label_font_size { style.title_bar_font_size = Some(FontSize) }
+    }
+}
+pub struct CanvasY(bool,f64);
+impl CanvasY{
+    pub fn is_done(&self)->bool{
+        if (self.0) & (self.1==0.0){
+            true
+        } else{
+            false
+        }
     }
 }
