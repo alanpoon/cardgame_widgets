@@ -49,8 +49,8 @@ pub struct State {
 }
 pub enum ListItem {
     IMAGE(image::Id, Rect),
-    NUM(i32),
-    BRACKET(i32),
+    NUM(i16),
+    BRACKET(i16),
     None,
 }
 impl<'a> ListSelect<'a> {

@@ -150,38 +150,43 @@ fn set_widgets(ui: &mut conrod::UiCell,
 
     match &_app.gamestate {
         &Gamestate::Green => {
-            animated_canvas::Canvas::new()
-                .flow_down(&[(ids.body, animated_canvas::Canvas::new().color(color::BLUE)),
-                             (ids.footer,
-                              animated_canvas::Canvas::new()
-                                  .color(color::DARK_GREEN)
-                                  .length(200.0))])
-                .color(color::LIGHT_BLUE)
-                .watch_state(_app.gamestate.clone())
-                .close_icon(rust_logo)
-                .frame_rate(30)
-                .set(ids.master, ui);
+            if animated_canvas::Canvas::new()
+                   .pad(50.0)
+                   .flow_down(&[(ids.body,
+                                 animated_canvas::Canvas::new().color(color::BLUE)),
+                                (ids.footer,
+                                 animated_canvas::Canvas::new()
+                                     .color(color::DARK_GREEN)
+                                     .length(200.0))])
+                   .color(color::LIGHT_BLUE)
+                   .watch_state(_app.gamestate.clone())
+                   .close_icon(rust_logo)
+                   .frame_rate(30)
+                   .set(ids.master, ui)
+                   .is_done() {
+                _app.gamestate = Gamestate::Red;
+            }
             widget::Image::new(rust_logo)
                 .w_h(90.0, 90.0)
                 .middle_of(ids.footer)
                 .set(ids.footer_image, ui);
-            if _app.frame > 300 {
-                _app.gamestate = Gamestate::Red;
-                _app.frame = 0;
-            } else {
-                _app.frame += 1;
-            }
+
         }
         &Gamestate::Red => {
-            animated_canvas::Canvas::new()
-                .flow_down(&[(ids.body, animated_canvas::Canvas::new().color(color::BLUE)),
-                             (ids.footer,
-                              animated_canvas::Canvas::new().color(color::RED).length(200.0))])
-                .color(color::LIGHT_BLUE)
-                .watch_state(_app.gamestate.clone())
-                .frame_rate(30)
-                .close_icon(rust_logo)
-                .set(ids.master, ui);
+            if animated_canvas::Canvas::new()
+                   .pad(50.0)
+                   .flow_down(&[(ids.body,
+                                 animated_canvas::Canvas::new().color(color::BLUE)),
+                                (ids.footer,
+                                 animated_canvas::Canvas::new()
+                                     .color(color::RED)
+                                     .length(200.0))])
+                   .color(color::LIGHT_BLUE)
+                   .watch_state(_app.gamestate.clone())
+                   .frame_rate(30)
+                   .close_icon(rust_logo)
+                   .set(ids.master, ui)
+                   .is_done() {};
             widget::Image::new(rust_logo)
                 .w_h(90.0, 90.0)
                 .middle_of(ids.footer)

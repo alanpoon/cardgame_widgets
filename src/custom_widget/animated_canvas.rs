@@ -6,8 +6,22 @@ use conrod::position::{self, Dimensions, Padding, Place, Position, Range, Rect, 
 use conrod::position::Direction::{Forwards, Backwards};
 use conrod::text;
 use conrod::widget;
+use conrod::widget::primitive::image::Image;
+use custom_widget::image_hover::{ImageHover, Hoverable};
 use std::marker::Send;
 use std::fmt::Debug;
+pub struct ImageHoverStruct(Image, Option<Image>, Option<Image>);
+impl Hoverable for ImageHoverStruct {
+    fn idle(&self) -> Image {
+        self.0
+    }
+    fn hover(&self) -> Option<Image> {
+        self.1
+    }
+    fn press(&self) -> Option<Image> {
+        self.2
+    }
+}
 /// **Canvas** is designed to be a "container"-like "parent" widget that simplifies placement of
 /// "children" widgets.
 ///
@@ -317,7 +331,7 @@ impl<'a, T> Widget for Canvas<'a, T>
     }
 
     /// Update the state of the Canvas.
-    fn update(self, args: widget::UpdateArgs<Self>) ->Self::Event{
+    fn update(self, args: widget::UpdateArgs<Self>) -> Self::Event {
         let widget::UpdateArgs { id, state, rect, mut ui, .. } = args;
         let Canvas { style, maybe_title_bar_label, maybe_splits, .. } = self;
 
@@ -492,12 +506,16 @@ impl<'a, T> Widget for Canvas<'a, T>
         if let Some(_close_image) = self.close_icon {
             let close_icon_dim = self.style.close_icon_dim(ui.theme());
             let close_icon_pos = self.style.close_icon_pos(ui.theme());
-            if widget::Button::image(_close_image)
+            let mut _image = Image::new(_close_image);
+            if let Some(_src_rect) = self.close_icon_src_rect {
+                _image.source_rectangle(_src_rect);
+            }
+            let instr = ImageHoverStruct(_image, None, None);
+            if ImageHover::new(instr)
                    .w_h(close_icon_dim[0] * _step, close_icon_dim[1] * _step)
                    .top_right_with_margins_on(first_split_id.unwrap_or(id),
                                               close_icon_pos[1] * _step,
                                               close_icon_pos[0] * _step)
-                   .border(0.0)
                    .set(state.ids.close_icon, ui)
                    .was_clicked() {
                 state.update(|state| {
@@ -506,8 +524,8 @@ impl<'a, T> Widget for Canvas<'a, T>
                              });
             }
         }
-        
-        CanvasY(state.closing,_step)
+
+        CanvasY(state.closing, _step)
     }
 }
 
@@ -565,12 +583,12 @@ impl<'a, T> Labelable<'a> for Canvas<'a, T>
         label_font_size { style.title_bar_font_size = Some(FontSize) }
     }
 }
-pub struct CanvasY(bool,f64);
-impl CanvasY{
-    pub fn is_done(&self)->bool{
-        if (self.0) & (self.1==0.0){
+pub struct CanvasY(bool, f64);
+impl CanvasY {
+    pub fn is_done(&self) -> bool {
+        if (self.0) & (self.1 == 0.0) {
             true
-        } else{
+        } else {
             false
         }
     }
