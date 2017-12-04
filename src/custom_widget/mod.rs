@@ -17,3 +17,4 @@ pub mod full_cycle_sprite;
 pub mod bordered_image;
 pub mod image_panels;
 pub mod arrange_list;
+pub mod player_info;

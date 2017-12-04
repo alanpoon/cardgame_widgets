@@ -4,3 +4,4 @@ extern crate conrod_derive;
 extern crate conrod;
 pub mod custom_widget;
 pub mod sprite;
+pub mod text;
