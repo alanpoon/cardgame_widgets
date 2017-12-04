@@ -8,8 +8,6 @@ use conrod::text;
 use conrod::widget;
 use conrod::widget::primitive::image::Image;
 use custom_widget::image_hover::{ImageHover, Hoverable};
-use std::marker::Send;
-use std::fmt::Debug;
 pub struct ImageHoverStruct(Image, Option<Image>, Option<Image>);
 impl Hoverable for ImageHoverStruct {
     fn idle(&self) -> Image {
@@ -37,9 +35,7 @@ impl Hoverable for ImageHoverStruct {
 ///
 /// See the `canvas.rs` example for a demonstration of the **Canvas** type.
 #[derive(Copy, Clone, Debug, WidgetCommon)]
-pub struct Canvas<'a, T>
-    where T: Clone + PartialEq + 'a + Send + 'static + Debug
-{
+pub struct Canvas<'a> {
     /// Data necessary and common for all widget builder types.
     #[conrod(common_builder)]
     pub common: widget::CommonBuilder,
@@ -48,9 +44,7 @@ pub struct Canvas<'a, T>
     /// The label for the **Canvas**' **TitleBar** if there is one.
     pub maybe_title_bar_label: Option<&'a str>,
     /// A list of child **Canvas**ses as splits of this **Canvas** flowing in the given direction.
-    pub maybe_splits: Option<FlowOfSplits<'a, T>>,
-    /// Watch State, used to compare with the cached state
-    pub watch_state: Option<T>,
+    pub maybe_splits: Option<FlowOfSplits<'a>>,
     /// close icon image Id
     pub close_icon: Option<image::Id>,
     /// close icon image source rectange
@@ -58,9 +52,8 @@ pub struct Canvas<'a, T>
 }
 
 /// **Canvas** state to be cached.
-pub struct State<T> {
+pub struct State {
     ids: Ids,
-    state: Option<T>,
     frame: f64,
     closing: bool,
 }
@@ -127,15 +120,15 @@ pub struct Style {
     #[conrod(default="[80.0,80.0]")]
     pub close_icon_dim: Option<[f64; 2]>,
     /// close icon position top right of corner
-    #[conrod(default="[90.0,90.0]")]
+    #[conrod(default="[20.0,20.0]")]
     pub close_icon_pos: Option<[f64; 2]>,
 }
 
 /// A series of **Canvas** splits along with their unique identifiers.
-pub type ListOfSplits<'a, T> = &'a [(widget::Id, Canvas<'a, T>)];
+pub type ListOfSplits<'a> = &'a [(widget::Id, Canvas<'a>)];
 
 /// A series of **Canvas** splits flowing in the specified direction.
-pub type FlowOfSplits<'a, T> = (Direction, ListOfSplits<'a, T>);
+pub type FlowOfSplits<'a> = (Direction, ListOfSplits<'a>);
 
 /// The length of a `Split` given as a weight.
 ///
@@ -162,9 +155,7 @@ pub enum Direction {
 }
 
 
-impl<'a, T> Canvas<'a, T>
-    where T: Clone + PartialEq + 'a + Send + 'static + Debug
-{
+impl<'a> Canvas<'a> {
     /// Construct a new Canvas builder.
     pub fn new() -> Self {
         Canvas {
@@ -172,7 +163,6 @@ impl<'a, T> Canvas<'a, T>
             style: Style::default(),
             maybe_title_bar_label: None,
             maybe_splits: None,
-            watch_state: None,
             close_icon: None,
             close_icon_src_rect: None,
         }
@@ -205,28 +195,28 @@ impl<'a, T> Canvas<'a, T>
     }
 
     /// Set the child Canvas Splits of the current Canvas flowing in a given direction.
-    fn flow(mut self, direction: Direction, splits: ListOfSplits<'a, T>) -> Self {
+    fn flow(mut self, direction: Direction, splits: ListOfSplits<'a>) -> Self {
         self.maybe_splits = Some((direction, splits));
         self
     }
 
     /// Set the child Canvasses flowing to the right.
-    pub fn flow_right(self, splits: ListOfSplits<'a, T>) -> Self {
+    pub fn flow_right(self, splits: ListOfSplits<'a>) -> Self {
         self.flow(Direction::X(Forwards), splits)
     }
 
     /// Set the child Canvasses flowing to the left.
-    pub fn flow_left(self, splits: ListOfSplits<'a, T>) -> Self {
+    pub fn flow_left(self, splits: ListOfSplits<'a>) -> Self {
         self.flow(Direction::X(Backwards), splits)
     }
 
     /// Set the child Canvasses flowing upwards.
-    pub fn flow_up(self, splits: ListOfSplits<'a, T>) -> Self {
+    pub fn flow_up(self, splits: ListOfSplits<'a>) -> Self {
         self.flow(Direction::Y(Forwards), splits)
     }
 
     /// Set the child Canvasses flowing downwards.
-    pub fn flow_down(self, splits: ListOfSplits<'a, T>) -> Self {
+    pub fn flow_down(self, splits: ListOfSplits<'a>) -> Self {
         self.flow(Direction::Y(Backwards), splits)
     }
 
@@ -253,11 +243,7 @@ impl<'a, T> Canvas<'a, T>
         self.style.title_bar_color = Some(Some(color));
         self
     }
-    /// Set the watch state to match with the Widget's state
-    pub fn watch_state(mut self, state: T) -> Self {
-        self.watch_state = Some(state);
-        self
-    }
+
     /// Set an image Id for the close icon
     pub fn close_icon(mut self, _image: image::Id) -> Self {
         self.close_icon = Some(_image);
@@ -271,17 +257,14 @@ impl<'a, T> Canvas<'a, T>
 }
 
 
-impl<'a, T> Widget for Canvas<'a, T>
-    where T: Clone + PartialEq + 'a + Send + 'static + Debug
-{
-    type State = State<T>;
+impl<'a> Widget for Canvas<'a> {
+    type State = State;
     type Style = Style;
     type Event = CanvasY; //true if closed
 
     fn init_state(&self, id_gen: widget::id::Generator) -> Self::State {
         State {
             ids: Ids::new(id_gen),
-            state: None,
             frame: 0.0,
             closing: false,
         }
@@ -335,22 +318,7 @@ impl<'a, T> Widget for Canvas<'a, T>
         let widget::UpdateArgs { id, state, rect, mut ui, .. } = args;
         let Canvas { style, maybe_title_bar_label, maybe_splits, .. } = self;
 
-        let watch_c = self.watch_state.clone();
-
-        if let &None = &state.state {
-            state.update(|state| state.state = watch_c.clone());
-        }
-        let state_c = state.state.clone();
-        if let (&Some(ref _state), &Some(ref _watch)) = (&state_c, &self.watch_state) {
-            if _state != _watch {
-                state.update(|state| {
-                                 state.frame = 0.0;
-                                 state.state = Some(_watch.clone());
-                             });
-            } else {
-                state.update(|state| state.frame += 1.0);
-            }
-        }
+        state.update(|state| state.frame += 1.0);
         // BorderedRectangle widget as the rectangle backdrop.
         let dim = rect.dim();
         let color = style.color(ui.theme());
@@ -428,7 +396,7 @@ impl<'a, T> Widget for Canvas<'a, T>
                 }
             };
 
-            let set_split = |split_id: widget::Id, split: Canvas<'a, T>, ui: &mut UiCell| {
+            let set_split = |split_id: widget::Id, split: Canvas, ui: &mut UiCell| {
                 split.parent(id).set(split_id, ui);
             };
 
@@ -508,7 +476,7 @@ impl<'a, T> Widget for Canvas<'a, T>
             let close_icon_pos = self.style.close_icon_pos(ui.theme());
             let mut _image = Image::new(_close_image);
             if let Some(_src_rect) = self.close_icon_src_rect {
-                _image.source_rectangle(_src_rect);
+                _image = _image.source_rectangle(_src_rect);
             }
             let instr = ImageHoverStruct(_image, None, None);
             if ImageHover::new(instr)
@@ -557,24 +525,18 @@ impl Style {
     }
 }
 
-impl<'a, T> Colorable for Canvas<'a, T>
-    where T: Clone + PartialEq + 'a + Send + 'static + Debug
-{
+impl<'a> Colorable for Canvas<'a> {
     builder_method!(color { style.color = Some(Color) });
 }
 
-impl<'a, T> Borderable for Canvas<'a, T>
-    where T: Clone + PartialEq + 'a + Send + 'static + Debug
-{
+impl<'a> Borderable for Canvas<'a> {
     builder_methods!{
         border { style.border = Some(Scalar) }
         border_color { style.border_color = Some(Color) }
     }
 }
 
-impl<'a, T> Labelable<'a> for Canvas<'a, T>
-    where T: Clone + PartialEq + 'a + Send + 'static + Debug
-{
+impl<'a> Labelable<'a> for Canvas<'a> {
     fn label(self, text: &'a str) -> Self {
         self.title_bar(text)
     }

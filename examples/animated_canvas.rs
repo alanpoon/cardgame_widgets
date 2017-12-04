@@ -21,12 +21,16 @@ widget_ids! {
          master,
          body,
          footer,
-         footer_image
+         footer_image,
+         overlay,
+         overlaytop,
+         overlaybtm
     }
 }
 pub struct App {
     gamestate: Gamestate,
     frame: u32,
+    overlay: bool,
 }
 #[derive(Clone)]
 pub enum ConrodMessage {
@@ -59,6 +63,7 @@ fn main() {
     let mut app = App {
         gamestate: Gamestate::Green,
         frame: 0,
+        overlay: true,
     };
 
     'render: loop {
@@ -150,8 +155,8 @@ fn set_widgets(ui: &mut conrod::UiCell,
 
     match &_app.gamestate {
         &Gamestate::Green => {
+
             if animated_canvas::Canvas::new()
-                   .pad(50.0)
                    .flow_down(&[(ids.body,
                                  animated_canvas::Canvas::new().color(color::BLUE)),
                                 (ids.footer,
@@ -159,14 +164,14 @@ fn set_widgets(ui: &mut conrod::UiCell,
                                      .color(color::DARK_GREEN)
                                      .length(200.0))])
                    .color(color::LIGHT_BLUE)
-                   .watch_state(_app.gamestate.clone())
                    .close_icon(rust_logo)
                    .frame_rate(30)
                    .set(ids.master, ui)
                    .is_done() {
                 _app.gamestate = Gamestate::Red;
             }
-            widget::Image::new(rust_logo)
+
+            widget::Button::image(rust_logo)
                 .w_h(90.0, 90.0)
                 .middle_of(ids.footer)
                 .set(ids.footer_image, ui);
@@ -174,7 +179,6 @@ fn set_widgets(ui: &mut conrod::UiCell,
         }
         &Gamestate::Red => {
             if animated_canvas::Canvas::new()
-                   .pad(50.0)
                    .flow_down(&[(ids.body,
                                  animated_canvas::Canvas::new().color(color::BLUE)),
                                 (ids.footer,
@@ -182,25 +186,41 @@ fn set_widgets(ui: &mut conrod::UiCell,
                                      .color(color::RED)
                                      .length(200.0))])
                    .color(color::LIGHT_BLUE)
-                   .watch_state(_app.gamestate.clone())
                    .frame_rate(30)
                    .close_icon(rust_logo)
                    .set(ids.master, ui)
-                   .is_done() {};
-            widget::Image::new(rust_logo)
-                .w_h(90.0, 90.0)
-                .middle_of(ids.footer)
-                .set(ids.footer_image, ui);
-            if _app.frame > 300 {
+                   .is_done() {
                 _app.gamestate = Gamestate::Green;
-                _app.frame = 0;
-            } else {
-                _app.frame += 1;
+            };
+            for k in widget::Button::image(rust_logo)
+                    .w_h(90.0, 90.0)
+                    .middle_of(ids.footer)
+                    .set(ids.footer_image, ui) {
+                _app.overlay = true;
             }
         }
 
     }
-
+    if _app.overlay {
+        if animated_canvas::Canvas::new()
+               .pad(200.0)
+               .flow_down(&[(ids.overlaytop,
+                             animated_canvas::Canvas::new()
+                                 .color(color::GREY)
+                                 .length(200.0)),
+                            (ids.overlaybtm,
+                             animated_canvas::Canvas::new()
+                                 .color(color::DARK_GREEN)
+                                 .length(400.0))])
+               .color(color::TRANSPARENT)
+               .close_icon(rust_logo)
+               .close_icon_src_rect(Rect::from_corners([27.0, 33.0], [117.0, 100.0]))
+               .frame_rate(30)
+               .set(ids.overlay, ui)
+               .is_done() {
+            _app.overlay = false;
+        }
+    }
 }
 fn load_image(display: &glium::Display, path: &str) -> glium::texture::Texture2d {
     let rgba_image = support::assets::load_image(path).to_rgba();

@@ -6,24 +6,31 @@ extern crate cardgame_widgets;
 extern crate find_folder;
 extern crate image;
 pub mod support;
-use conrod::{widget, color, Colorable, Widget, Positionable, Sizeable, Borderable};
+use conrod::{widget, color, Colorable, Widget, Positionable, Sizeable, Rect};
 use conrod::backend::glium::glium::{self, glutin, Surface};
 use conrod::event;
+use conrod::widget::Canvas;
 use std::time::Instant;
-use std::collections::hash_map::RandomState;
-use std::collections::HashSet;
-use cardgame_widgets::custom_widget::image_panels::{Panelable, ImagePanels, ImageRectType};
-use cardgame_widgets::custom_widget::bordered_image::BorderedImage;
+#[derive(Clone,PartialEq,Debug)]
+enum Gamestate {
+    Green,
+    Red,
+}
 widget_ids! {
     pub struct Ids {
          master,
-         panel,
+         body,
+         footer,
+         footer_image,
+         overlay,
+         overlaytop,
+         overlaybtm
     }
 }
-
 pub struct App {
-    normal_stuff: (Option<String>, Option<ImageRectType>, Vec<ImageRectType>),
-    list_selecteds: HashSet<usize, RandomState>,
+    gamestate: Gamestate,
+    frame: u32,
+    overlay: bool,
 }
 #[derive(Clone)]
 pub enum ConrodMessage {
@@ -42,22 +49,21 @@ fn main() {
     let (screen_w, screen_h) = display.get_framebuffer_dimensions();
     let mut ui = conrod::UiBuilder::new([screen_w as f64, screen_h as f64]).build();
 
-    let rust_logo = load_image(&display, "images/rust.png");
     let events_loop_proxy = events_loop.create_proxy();
     let mut ids = Ids::new(ui.widget_id_generator());
     let mut demo_text_edit = "Click here !".to_owned();
     let mut last_update = std::time::Instant::now();
     let mut c = 0;
+    let rust_logo = load_image(&display, "images/green.png");
     let mut image_map: conrod::image::Map<glium::texture::Texture2d> = conrod::image::Map::new();
     let rust_logo = image_map.insert(rust_logo);
     let mut old_captured_event: Option<ConrodMessage> = None;
     let mut captured_event: Option<ConrodMessage> = None;
     let sixteen_ms = std::time::Duration::from_millis(800);
     let mut app = App {
-        normal_stuff: (Some("ALAN".to_string()),
-                       Some((rust_logo, None)),
-                       vec![(rust_logo, None), (rust_logo, None)]),
-        list_selecteds: HashSet::new(),
+        gamestate: Gamestate::Green,
+        frame: 0,
+        overlay: true,
     };
 
     'render: loop {
@@ -93,7 +99,6 @@ fn main() {
                     } else {
                         captured_event = Some(ConrodMessage::Event(d, input));
                     }
-
                 }
             };
         });
@@ -147,43 +152,74 @@ fn set_widgets(ui: &mut conrod::UiCell,
                ids: &mut Ids,
                _app: &mut App,
                rust_logo: conrod::image::Id) {
-    widget::Canvas::new().color(color::LIGHT_BLUE).set(ids.master, ui);
-    let item_h = 30.0;
-    let (mut events, _) = widget::ListSelect::multiple(_app.normal_stuff.2.len())
-        .middle_of(ids.master)
-         .flow_right()
-        .item_size(item_h)
-        .scrollbar_next_to()
-        //.w_h(400.0, 230.0)
-        //.top_left_with_margins_on(ids.canvas, 40.0, 40.0)
-        .padded_wh_of(ids.master, 20.0)
-        .set(ids.panel, ui);
-    while let Some(event) = events.next(ui, |i| _app.list_selecteds.contains(&i)) {
-        use conrod::widget::list_select::Event;
-        match event {
 
-            // For the `Item` events we instantiate the `List`'s items.
-            Event::Item(item) => {
-                let mut j = BorderedImage::new(rust_logo);
-                j = match _app.list_selecteds.contains(&item.i) {
-                    true => j.bordered(),
-                    false => j,
-                };
-                j = j.border(20.0).border_color(color::YELLOW).w_h(260.0, 200.0);
-                //  let j = widget::Button::image(rust_logo)
-                //          .w_h(260.0,200.0);
-                item.set(j, ui);
+    match &_app.gamestate {
+        &Gamestate::Green => {
+
+            Canvas::new()
+                   .flow_down(&[(ids.body,
+                                 Canvas::new().color(color::BLUE)),
+                                (ids.footer,
+                                 Canvas::new()
+                                     .color(color::DARK_GREEN)
+                                     .length(200.0))])
+                   .color(color::LIGHT_BLUE)
+                 /* .close_icon(rust_logo)
+                   .frame_rate(30)
+                   */
+                   .set(ids.master, ui);
+            /*       .is_done() {
+                _app.gamestate = Gamestate::Red;
+            }*/
+
+            for k in widget::Button::image(rust_logo)
+                    .w_h(90.0, 90.0)
+                    .middle_of(ids.footer)
+                    .set(ids.footer_image, ui) {
+                _app.overlay = true;
             }
 
-            // The selection has changed.
-            Event::Selection(selection) => {
-                selection.update_index_set(&mut _app.list_selecteds);
-                println!("selected indices: {:?}", _app.list_selecteds);
-            }
-
-            // The remaining events indicate interactions with the `ListSelect` widget.
-            event => println!("{:?}", &event),
         }
+        &Gamestate::Red => {
+            Canvas::new()
+                   .flow_down(&[(ids.body,
+                                 Canvas::new().color(color::BLUE)),
+                                (ids.footer,
+                                 Canvas::new()
+                                     .color(color::RED)
+                                     .length(200.0))])
+                   .color(color::LIGHT_BLUE)
+                //   .frame_rate(30)
+                 //  .close_icon(rust_logo)
+                   .set(ids.master, ui);
+            //.is_done() {_app.gamestate = Gamestate::Green;};
+            for k in widget::Button::image(rust_logo)
+                    .w_h(90.0, 90.0)
+                    .middle_of(ids.footer)
+                    .set(ids.footer_image, ui) {
+                _app.overlay = true;
+            }
+        }
+
+    }
+    if _app.overlay {
+        Canvas::new()
+                   // .pad(200.0)
+                    .wh_of(ids.master)
+                    .middle_of(ids.master)
+                   .flow_down(&[(ids.overlaytop,
+                                 Canvas::new().color(color::GREY).length(200.0)),
+                                (ids.overlaybtm,
+                                 Canvas::new()
+                                     .color(color::RED))])
+                   .color(color::TRANSPARENT)
+                 //  .close_icon(rust_logo)
+                  // .close_icon_src_rect(Rect::from_corners([27.0,33.0], [117.0,100.0]))
+                //   .frame_rate(30)
+                   .set(ids.overlay, ui);
+        /*.is_done(){
+                _app.overlay =false;        
+                   }*/
     }
 }
 fn load_image(display: &glium::Display, path: &str) -> glium::texture::Texture2d {
