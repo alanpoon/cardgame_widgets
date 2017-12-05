@@ -15,7 +15,7 @@ pub fn get_font_size_wh(w: Scalar, h: Scalar, val_string: &str) -> FontSize {
     min((w / (val_string.len() as f64) / 0.75).floor() as u32,
         (h - 2.0 * LABEL_PADDING).floor() as u32)
 }
-pub fn get_font_size_hn(h: Scalar, numberline: Scalar, val_string: &str) -> FontSize {
+pub fn get_font_size_hn(h: Scalar, numberline: Scalar) -> FontSize {
     (h / numberline - 2.0 * LABEL_PADDING).floor() as u32
 }
 /// Calculate the default height for the **TitleBar**'s rect.

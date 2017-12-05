@@ -1,7 +1,7 @@
 use conrod::{widget, Color, Colorable, Positionable, UiCell, Widget, Sizeable, Rect, text};
 use custom_widget::player_info::item::{Icon, IconStruct};
 use std::iter::once;
-use text::{get_font_size_wh, get_font_size_hn};
+use text::get_font_size_wh;
 //Player_info list all player's item, at the end, there is some arrow animation that opens another overlay
 
 /// The type upon which we'll implement the `Widget` trait.
@@ -165,11 +165,14 @@ impl<'a> Widget for List<'a> {
                 Event::Selection(id) => {
                     if let Some(_c) = state.selected {
                         if _c == id {
+                            self.overlay = false;
                             state.update(|state| state.selected = None);
                         } else {
+                            self.overlay = true;
                             state.update(|state| state.selected = Some(id));
                         }
                     } else {
+                        self.overlay = true;
                         state.update(|state| state.selected = Some(id));
                     }
                 }

@@ -173,7 +173,7 @@ impl<'a, T, W, A> Widget for ArrangeList<'a, T, W, A>
                 Event::Selection(selected_id) => {
                     state.update(|state| state.selected = Some(selected_id));
                 }
-                event => {}
+                _ => {}
             }
         }
         if let (Some(_a), Some(_s_id)) = (self.left_arrow, state.s_widget_id) {

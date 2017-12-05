@@ -20,7 +20,6 @@ widget_ids! {
     pub struct Ids {
          master,
          icon_vec,
-         overlay,
         overlay_rect,
         overlay_image,
         overlay_text
@@ -166,7 +165,7 @@ fn set_widgets(ui: &mut conrod::UiCell,
     widget::Canvas::new().color(color::WHITE).set(ids.master, ui);
     let w = ui.w_of(ids.master).unwrap();
     let default_color = color::GREY;
-    let slist = List::new(_app.icon_vec.clone(), &mut _app.overlay)
+    let slist = List::new(_app.icon_vec.clone())
         .color(default_color)
         .label("Player Info")
         .label_color(default_color.plain_contrast())
@@ -184,14 +183,13 @@ fn set_widgets(ui: &mut conrod::UiCell,
             _image.wh([20.0, 20.0]).mid_left_of(ids.overlay_rect).set(ids.overlay_image, ui);
             let fontsize = get_font_size_hn(_dim[1], 3.0, &_desc);
             widget::Text::new(&_desc)
-                    .font_size(fontsize)
-                 //   .and_then(font_id, widget::Text::font_id)
-                    .color(default_color.plain_contrast())
-                    .align_middle_y_of(ids.overlay_image)
-                    .right_from(ids.overlay_image, 0.0)
-                    .w(_dim[0] * 0.5 - 20.0)
-                    .h_of(ids.overlay_rect)
-                    .set(ids.overlay_text, ui);
+                .font_size(fontsize)
+                .color(default_color.plain_contrast())
+                .align_middle_y_of(ids.overlay_image)
+                .right_from(ids.overlay_image, 0.0)
+                .w(_dim[0] * 0.5 - 20.0)
+                .h_of(ids.overlay_rect)
+                .set(ids.overlay_text, ui);
         }
     }
 }
