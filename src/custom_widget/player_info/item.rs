@@ -1,8 +1,9 @@
-use conrod::{widget, Positionable, Widget, Sizeable, text, Color, Colorable};
+use conrod::{widget, Positionable, Widget, Sizeable, text, Color, Colorable, Scalar};
 use conrod::widget::primitive::image::Image;
+use conrod::widget::Rectangle;
 use text::get_font_size_wh;
 #[derive(Clone)]
-pub struct IconStruct(pub Image, pub String);
+pub struct IconStruct(pub Image, pub String, pub String);
 /// The type upon which we'll implement the `Widget` trait.
 #[derive(WidgetCommon)]
 pub struct Icon {
@@ -13,9 +14,10 @@ pub struct Icon {
     pub icon: IconStruct,
     /// See the Style struct below.
     style: Style,
+    pub bordered: bool,
 }
 
-#[derive(Copy, Clone, Debug, Default, PartialEq, WidgetStyle)]
+#[derive(Clone, Debug, Default, PartialEq, WidgetStyle)]
 pub struct Style {
     /// The color of the AnimatedButton's label.
     #[conrod(default = "theme.label_color")]
@@ -23,10 +25,18 @@ pub struct Style {
     /// The ID of the font used to display the label.
     #[conrod(default = "theme.font_id")]
     pub label_font_id: Option<Option<text::font::Id>>,
+    /// Width of the border surrounding the Image
+    #[conrod(default = "theme.border_width")]
+    pub border: Option<Scalar>,
+    /// The color of the border.
+    #[conrod(default = "theme.border_color")]
+    pub border_color: Option<Color>,
 }
 
 widget_ids! {
     struct Ids {
+        border,
+        rect,
         image,
         label
     }
@@ -43,10 +53,17 @@ impl Icon {
             icon: icon,
             common: widget::CommonBuilder::default(),
             style: Style::default(),
+            bordered: false,
         }
     }
     builder_methods!{
         pub label_color { style.label_color = Some(Color) }
+        pub border { style.border = Some(Scalar) }
+        pub border_color { style.border_color = Some(Color) }
+    }
+    pub fn bordered(mut self) -> Self {
+        self.bordered = true;
+        self
     }
     /// Specify the font used for displaying the label.
     pub fn label_font_id(mut self, font_id: text::font::Id) -> Self {
@@ -85,6 +102,24 @@ impl Widget for Icon {
         //
         let (_, _, w, _) = rect.x_y_w_h();
         let h = w / 2.0;
+        let border = if self.bordered {
+            self.style.border(ui.theme())
+        } else {
+            0.0
+        };
+        if self.bordered {
+            let border_color = self.style.border_color(ui.theme());
+            let _style = widget::line::Style {
+                maybe_pattern: None,
+                maybe_color: Some(border_color),
+                maybe_thickness: Some(border),
+                maybe_cap: None,
+            };
+            Rectangle::outline_styled([w, h],_style).middle_of(id)
+            .parent(id)
+            //.graphics_for(id)
+            .set(state.ids.rect, ui);
+        }
         self.icon
             .0
             .w_h(h * 0.8, h * 0.8)

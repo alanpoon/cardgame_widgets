@@ -1,7 +1,7 @@
 use conrod::{widget, Color, Colorable, Positionable, UiCell, Widget, Sizeable, Rect, text};
 use custom_widget::player_info::item::{Icon, IconStruct};
 use std::iter::once;
-use text::get_font_size_wh;
+use text::{get_font_size_wh, get_font_size_whn};
 //Player_info list all player's item, at the end, there is some arrow animation that opens another overlay
 
 /// The type upon which we'll implement the `Widget` trait.
@@ -38,7 +38,10 @@ widget_ids! {
         arrow1,
         arrow2,
         arrow3,
-        player_info
+        player_info,
+        overlay_rect,
+        overlay_image,
+        overlay_text
     }
 }
 
@@ -46,6 +49,8 @@ widget_ids! {
 pub struct State {
     ids: Ids,
     frame: u16,
+    selected: Option<usize>,
+    selected_id: Option<widget::Id>,
 }
 
 impl<'a> List<'a> {
@@ -86,6 +91,8 @@ impl<'a> Widget for List<'a> {
         State {
             ids: Ids::new(id_gen),
             frame: 0,
+            selected: None,
+            selected_id: None,
         }
     }
 
@@ -114,26 +121,51 @@ impl<'a> Widget for List<'a> {
                 .top_left_with_margins_on(id, _dim[1] * 0.23, 0.0)
                 .font_size(fontsize)
                 .and_then(font_id, widget::Text::font_id)
-                .color(self.style.label_color(&ui.theme))
+                .color(default_color.plain_contrast())
                 .w(_dim[0] * 0.3)
                 .h_of(id)
                 .set(state.ids.player_info, ui);
         }
 
         let item_size = _dim[0] * 0.5 / self.icon_vec.len() as f64;
-        let (mut items, _scrollbar) = widget::List::flow_right(self.icon_vec.len())
+        let (mut events, _scrollbar) = widget::ListSelect::single(self.icon_vec.len())
+            .flow_right()
             .top_left_with_margins_on(id, 0.0, _dim[0] * 0.3)
             .item_size(item_size)
             .w(_dim[0] * 0.5)
             .parent(id)
             .graphics_for(id)
             .set(state.ids.icon_vec, ui);
-        while let Some(item) = items.next(ui) {
-            if let Some(ref info) = self.icon_vec.get(item.i) {
-                let j = Icon::new(info.clone().clone())
-                    .label_color(self.style.label_color(&ui.theme));
-                item.set(j, ui);
+        while let Some(event) = events.next(ui, |i| {
+            let mut y = false;
+            if let Some(_s) = state.selected {
+                if i == _s {
+                    y = true;
+                }
             }
+            y
+        }) {
+            use conrod::widget::list_select::Event;
+            match event {
+                Event::Item(item) => {
+                    if let Some(ref info) = self.icon_vec.get(item.i) {
+                        let mut j = Icon::new(info.clone().clone())
+                            .label_color(self.style.label_color(&ui.theme));
+                        if let Some(_s) = state.selected {
+                            if _s == item.i {
+                                j = j.bordered();
+                                state.update(|state| state.selected_id = Some(item.widget_id));
+                            }
+                        }
+                        item.set(j, ui);
+                    }
+                }
+                Event::Selection(id) => {
+                    state.update(|state| state.selected = Some(id));
+                }
+                _ => {}
+            }
+
         }
 
         let (left, top, right) = if self.overlay.clone() {
@@ -176,7 +208,27 @@ impl<'a> Widget for List<'a> {
         if state.frame > 180 {
             state.update(|state| state.frame = 0);
         }
+        if let (Some(_si), Some(_s)) = (state.selected_id, state.selected) {
 
+            widget::Rectangle::fill_with([_dim[0] * 0.3, _dim[1]], default_color)
+                .down_from(_si, 0.0)
+                .set(state.ids.overlay_rect, ui);
+            if let Some(&IconStruct(ref _image, _, ref _desc)) = self.icon_vec.get(_s) {
+                _image.wh([20.0, 20.0])
+                    .mid_left_of(state.ids.overlay_rect)
+                    .set(state.ids.overlay_image, ui);
+                let fontsize = get_font_size_whn(_dim[0] * 0.3 - 20.0, _dim[1], 2.0, &_desc);
+                widget::Text::new(&_desc)
+                    .font_size(fontsize)
+                    .and_then(font_id, widget::Text::font_id)
+                    .color(default_color.plain_contrast())
+                    .right_from(state.ids.overlay_image, 0.0)
+                    .w(_dim[0] * 0.3 - 20.0)
+                    .h_of(state.ids.overlay_rect)
+                    .set(state.ids.overlay_text, ui);
+            }
+
+        }
     }
 }
 

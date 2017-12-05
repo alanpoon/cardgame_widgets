@@ -6,13 +6,13 @@ extern crate cardgame_widgets;
 extern crate find_folder;
 extern crate image;
 pub mod support;
-use conrod::{widget, color, Colorable, Widget, Positionable, Sizeable, Rect, Borderable, Labelable};
+use conrod::{widget, color, Colorable, Widget, Positionable, Sizeable, Labelable};
 use conrod::backend::glium::glium::{self, glutin, Surface};
 use conrod::event;
 use conrod::widget::primitive::image::Image;
 use cardgame_widgets::custom_widget::player_info::list::List;
 use cardgame_widgets::custom_widget::player_info::item::IconStruct;
-use cardgame_widgets::sprite::{spriteable_rect, SpriteInfo};
+use cardgame_widgets::sprite::SpriteInfo;
 
 use std::time::Instant;
 
@@ -47,9 +47,7 @@ fn main() {
     let button_logo = load_image(&display, "images/arrows_but.png");
     let events_loop_proxy = events_loop.create_proxy();
     let mut ids = Ids::new(ui.widget_id_generator());
-    let mut demo_text_edit = "Click here !".to_owned();
     let mut last_update = std::time::Instant::now();
-    let mut c = 0;
     let mut image_map: conrod::image::Map<glium::texture::Texture2d> = conrod::image::Map::new();
     let rust_logo = image_map.insert(rust_logo);
     let button_logo = image_map.insert(button_logo);
@@ -57,10 +55,20 @@ fn main() {
     let mut captured_event: Option<ConrodMessage> = None;
     let sixteen_ms = std::time::Duration::from_millis(800);
     let mut app = App {
-        icon_vec: vec![IconStruct(Image::new(rust_logo), "(80)".to_owned()),
-                       IconStruct(Image::new(rust_logo), "(70)".to_owned()),
-                       IconStruct(Image::new(rust_logo), "(80)".to_owned()),
-                       IconStruct(Image::new(rust_logo), "(70)".to_owned())],
+        icon_vec:
+            vec![IconStruct(Image::new(rust_logo),
+                            "(80)".to_owned(),
+                            "Use to buy cards".to_owned()),
+                 IconStruct(Image::new(rust_logo),
+                            "(70)".to_owned(),
+                            "Like blackjack,you draw one more card in hope to score more points"
+                                .to_owned()),
+                 IconStruct(Image::new(rust_logo),
+                            "(80)".to_owned(),
+                            "Use to make a card wild card".to_owned()),
+                 IconStruct(Image::new(rust_logo),
+                            "(70)".to_owned(),
+                            "Use to make a card wild card".to_owned())],
         overlay: false,
     };
 
