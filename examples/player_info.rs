@@ -13,13 +13,17 @@ use conrod::widget::primitive::image::Image;
 use cardgame_widgets::custom_widget::player_info::list::List;
 use cardgame_widgets::custom_widget::player_info::item::IconStruct;
 use cardgame_widgets::sprite::SpriteInfo;
-
+use cardgame_widgets::text::get_font_size_hn;
 use std::time::Instant;
 
 widget_ids! {
     pub struct Ids {
          master,
          icon_vec,
+         overlay,
+        overlay_rect,
+        overlay_image,
+        overlay_text
     }
 }
 pub struct App {
@@ -55,8 +59,7 @@ fn main() {
     let mut captured_event: Option<ConrodMessage> = None;
     let sixteen_ms = std::time::Duration::from_millis(800);
     let mut app = App {
-        icon_vec:
-            vec![IconStruct(Image::new(rust_logo),
+        icon_vec: vec![IconStruct(Image::new(rust_logo),
                             "(80)".to_owned(),
                             "Use to buy cards".to_owned()),
                  IconStruct(Image::new(rust_logo),
@@ -163,7 +166,7 @@ fn set_widgets(ui: &mut conrod::UiCell,
     widget::Canvas::new().color(color::WHITE).set(ids.master, ui);
     let w = ui.w_of(ids.master).unwrap();
     let default_color = color::GREY;
-    List::new(_app.icon_vec.clone(), &mut _app.overlay)
+    let slist = List::new(_app.icon_vec.clone(), &mut _app.overlay)
         .color(default_color)
         .label("Player Info")
         .label_color(default_color.plain_contrast())
@@ -171,7 +174,26 @@ fn set_widgets(ui: &mut conrod::UiCell,
         .w(w * 0.7)
         .h(100.0)
         .set(ids.icon_vec, ui);
-
+    if let (Some(_s), Some(_si), Some(xy)) = slist {
+        let _dim = [w * 0.7, 100.0];
+        widget::Rectangle::fill_with([_dim[0] * 0.5, _dim[1]], default_color)
+            .x(xy[0])
+            .down_from(ids.icon_vec, 0.0)
+            .set(ids.overlay_rect, ui);
+        if let Some(&IconStruct(ref _image, _, ref _desc)) = _app.icon_vec.get(_s) {
+            _image.wh([20.0, 20.0]).mid_left_of(ids.overlay_rect).set(ids.overlay_image, ui);
+            let fontsize = get_font_size_hn(_dim[1], 3.0, &_desc);
+            widget::Text::new(&_desc)
+                    .font_size(fontsize)
+                 //   .and_then(font_id, widget::Text::font_id)
+                    .color(default_color.plain_contrast())
+                    .align_middle_y_of(ids.overlay_image)
+                    .right_from(ids.overlay_image, 0.0)
+                    .w(_dim[0] * 0.5 - 20.0)
+                    .h_of(ids.overlay_rect)
+                    .set(ids.overlay_text, ui);
+        }
+    }
 }
 fn load_image(display: &glium::Display, path: &str) -> glium::texture::Texture2d {
     let rgba_image = support::assets::load_image(path).to_rgba();

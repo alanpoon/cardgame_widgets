@@ -1,7 +1,7 @@
 use conrod::{widget, Color, Colorable, Positionable, UiCell, Widget, Sizeable, Rect, text};
 use custom_widget::player_info::item::{Icon, IconStruct};
 use std::iter::once;
-use text::{get_font_size_wh, get_font_size_whn};
+use text::{get_font_size_wh, get_font_size_hn};
 //Player_info list all player's item, at the end, there is some arrow animation that opens another overlay
 
 /// The type upon which we'll implement the `Widget` trait.
@@ -39,9 +39,7 @@ widget_ids! {
         arrow2,
         arrow3,
         player_info,
-        overlay_rect,
-        overlay_image,
-        overlay_text
+
     }
 }
 
@@ -51,6 +49,7 @@ pub struct State {
     frame: u16,
     selected: Option<usize>,
     selected_id: Option<widget::Id>,
+    selected_xy: Option<[f64; 2]>,
 }
 
 impl<'a> List<'a> {
@@ -85,7 +84,7 @@ impl<'a> Widget for List<'a> {
     /// The event produced by instantiating the widget.
     ///
     /// `Some` when clicked, otherwise `None`.
-    type Event = ();
+    type Event = (Option<usize>, Option<widget::Id>, Option<[f64; 2]>);
 
     fn init_state(&self, id_gen: widget::id::Generator) -> Self::State {
         State {
@@ -93,6 +92,7 @@ impl<'a> Widget for List<'a> {
             frame: 0,
             selected: None,
             selected_id: None,
+            selected_xy: None,
         }
     }
 
@@ -132,7 +132,7 @@ impl<'a> Widget for List<'a> {
             .flow_right()
             .top_left_with_margins_on(id, 0.0, _dim[0] * 0.3)
             .item_size(item_size)
-            .w(_dim[0] * 0.5)
+            .w(_dim[0] * 0.6)
             .parent(id)
             .graphics_for(id)
             .set(state.ids.icon_vec, ui);
@@ -154,6 +154,8 @@ impl<'a> Widget for List<'a> {
                         if let Some(_s) = state.selected {
                             if _s == item.i {
                                 j = j.bordered();
+                                let xy = ui.xy_of(item.widget_id);
+                                state.update(|state| state.selected_xy = xy);
                                 state.update(|state| state.selected_id = Some(item.widget_id));
                             }
                         }
@@ -161,7 +163,15 @@ impl<'a> Widget for List<'a> {
                     }
                 }
                 Event::Selection(id) => {
-                    state.update(|state| state.selected = Some(id));
+                    if let Some(_c) = state.selected {
+                        if _c == id {
+                            state.update(|state| state.selected = None);
+                        } else {
+                            state.update(|state| state.selected = Some(id));
+                        }
+                    } else {
+                        state.update(|state| state.selected = Some(id));
+                    }
                 }
                 _ => {}
             }
@@ -208,27 +218,7 @@ impl<'a> Widget for List<'a> {
         if state.frame > 180 {
             state.update(|state| state.frame = 0);
         }
-        if let (Some(_si), Some(_s)) = (state.selected_id, state.selected) {
-
-            widget::Rectangle::fill_with([_dim[0] * 0.3, _dim[1]], default_color)
-                .down_from(_si, 0.0)
-                .set(state.ids.overlay_rect, ui);
-            if let Some(&IconStruct(ref _image, _, ref _desc)) = self.icon_vec.get(_s) {
-                _image.wh([20.0, 20.0])
-                    .mid_left_of(state.ids.overlay_rect)
-                    .set(state.ids.overlay_image, ui);
-                let fontsize = get_font_size_whn(_dim[0] * 0.3 - 20.0, _dim[1], 2.0, &_desc);
-                widget::Text::new(&_desc)
-                    .font_size(fontsize)
-                    .and_then(font_id, widget::Text::font_id)
-                    .color(default_color.plain_contrast())
-                    .right_from(state.ids.overlay_image, 0.0)
-                    .w(_dim[0] * 0.3 - 20.0)
-                    .h_of(state.ids.overlay_rect)
-                    .set(state.ids.overlay_text, ui);
-            }
-
-        }
+        (state.selected, state.selected_id, state.selected_xy)
     }
 }
 

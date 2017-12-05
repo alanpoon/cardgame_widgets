@@ -115,10 +115,10 @@ impl Widget for Icon {
                 maybe_thickness: Some(border),
                 maybe_cap: None,
             };
-            Rectangle::outline_styled([w, h],_style).middle_of(id)
-            .parent(id)
-            //.graphics_for(id)
-            .set(state.ids.rect, ui);
+            Rectangle::outline_styled([w * 0.97, h], _style)
+                .middle_of(id)
+                .parent(id)
+                .set(state.ids.rect, ui);
         }
         self.icon
             .0
