@@ -20,14 +20,18 @@ widget_ids! {
     pub struct Ids {
          master,
          icon_vec,
-        overlay_rect,
+         overlay_top,
+         overlay_body,
+         overlay_canvas,
         overlay_image,
-        overlay_text
+        overlay_text,
+        overlay2
     }
 }
 pub struct App {
     icon_vec: Vec<IconStruct>,
     overlay: bool,
+    frame: u32,
 }
 #[derive(Clone)]
 pub enum ConrodMessage {
@@ -57,9 +61,11 @@ fn main() {
     let mut old_captured_event: Option<ConrodMessage> = None;
     let mut captured_event: Option<ConrodMessage> = None;
     let sixteen_ms = std::time::Duration::from_millis(800);
+    let u: usize = 2;
     let mut app = App {
+        /*
         icon_vec: vec![IconStruct(Image::new(rust_logo),
-                            "(80)".to_owned(),
+                            u.to_string(),
                             "Use to buy cards".to_owned()),
                  IconStruct(Image::new(rust_logo),
                             "(70)".to_owned(),
@@ -71,6 +77,18 @@ fn main() {
                  IconStruct(Image::new(rust_logo),
                             "(70)".to_owned(),
                             "Use to make a card wild card".to_owned())],
+                            */
+                            
+        icon_vec: vec![IconStruct(Image::new(rust_logo),"(80)".to_owned(),"Ink: like Blackjack, draw one more card in hope of scoring more points. You must however use this card to spell word".to_owned()), //ink
+         IconStruct(Image::new(rust_logo),"(80)".to_owned(),"Ink Remover, You may convert an inked card back to normal. You put it back into your hand".to_owned()), //inkremover
+         IconStruct(Image::new(rust_logo),"(80)".to_owned(),"Coin, You may use coin to buy new cards".to_owned()), //coin
+         IconStruct(Image::new(rust_logo),"(80)".to_owned(),"Literacy Award, Construct longer words, the token go to the last player who constructed the longest word".to_owned()), //literacy award
+         IconStruct(Image::new(rust_logo),"(80)".to_owned(),"Prestige, End Game Victory Point".to_owned()), //prestige
+         IconStruct(Image::new(rust_logo),"(80)".to_owned(),"Size of Draft pile".to_owned()), //draftlen
+         
+    ],
+        frame:0,
+        
         overlay: false,
     };
 
@@ -154,6 +172,7 @@ fn main() {
         renderer.draw(&display, &mut target, &image_map).unwrap();
         target.finish().unwrap();
         last_update = std::time::Instant::now();
+        app.frame += 1;
     }
 }
 
@@ -162,36 +181,49 @@ fn set_widgets(ui: &mut conrod::UiCell,
                _app: &mut App,
                rust_logo: conrod::image::Id,
                button: conrod::image::Id) {
-    widget::Canvas::new().color(color::WHITE).set(ids.master, ui);
+    widget::Canvas::new().color(color::GREEN).set(ids.master, ui);
     let w = ui.w_of(ids.master).unwrap();
     let default_color = color::GREY;
-    let slist = List::new(_app.icon_vec.clone())
-        .color(default_color)
-        .label("Player Info")
-        .label_color(default_color.plain_contrast())
-        .mid_left_of(ids.master)
-        .w(w * 0.7)
-        .h(100.0)
-        .set(ids.icon_vec, ui);
-    if let (Some(_s), Some(_si), Some(xy)) = slist {
-        let _dim = [w * 0.7, 100.0];
-        widget::Rectangle::fill_with([_dim[0] * 0.5, _dim[1]], default_color)
-            .x(xy[0])
-            .down_from(ids.icon_vec, 0.0)
-            .set(ids.overlay_rect, ui);
-        if let Some(&IconStruct(ref _image, _, ref _desc)) = _app.icon_vec.get(_s) {
-            _image.wh([20.0, 20.0]).mid_left_of(ids.overlay_rect).set(ids.overlay_image, ui);
-            let fontsize = get_font_size_hn(_dim[1], 3.0, &_desc);
-            widget::Text::new(&_desc)
-                .font_size(fontsize)
-                .color(default_color.plain_contrast())
-                .align_middle_y_of(ids.overlay_image)
-                .right_from(ids.overlay_image, 0.0)
-                .w(_dim[0] * 0.5 - 20.0)
-                .h_of(ids.overlay_rect)
-                .set(ids.overlay_text, ui);
+    if _app.frame >= 10 {
+        widget::Canvas::new()
+            .flow_down(&[(ids.overlay_top,
+                          widget::Canvas::new().color(color::LIGHT_BLUE).length(100.0)),
+                         (ids.overlay_body, widget::Canvas::new().color(color::YELLOW))])
+            .middle_of(ids.master)
+            .wh([400.0, 400.0])
+            .color(color::TRANSPARENT)
+            .set(ids.overlay_canvas, ui);
+        let slist = List::new(_app.icon_vec.clone(), &mut _app.overlay)
+            .color(default_color)
+            .label("Player Info")
+            .label_color(default_color.plain_contrast())
+            .mid_left_of(ids.overlay_top)
+            .wh_of(ids.overlay_top)
+            .set(ids.icon_vec, ui);
+        if let (Some(_s), Some(_si), Some(xy)) = slist {
+
+            if let Some(&IconStruct(ref _image, _, ref _desc)) = _app.icon_vec.get(_s) {
+                let _dim = [300.0, 100.0];
+                widget::Canvas::new()
+                    .wh(_dim)
+                    .x(xy[0])
+                    .color(default_color)
+                    .down_from(ids.overlay_top, 0.0)
+                    .set(ids.overlay2, ui);
+                _image.wh([20.0, 20.0]).mid_left_of(ids.overlay2).set(ids.overlay_image, ui);
+                let fontsize = get_font_size_hn(_dim[1], 4.0);
+                widget::Text::new(&_desc)
+                    .font_size(fontsize)
+                    .color(default_color.plain_contrast())
+                    .align_middle_y_of(ids.overlay_image)
+                    .right_from(ids.overlay_image, 0.0)
+                    .w(_dim[0] - 20.0)
+                    .h_of(ids.overlay2)
+                    .set(ids.overlay_text, ui);
+            }
         }
     }
+
 }
 fn load_image(display: &glium::Display, path: &str) -> glium::texture::Texture2d {
     let rgba_image = support::assets::load_image(path).to_rgba();

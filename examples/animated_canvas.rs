@@ -203,7 +203,8 @@ fn set_widgets(ui: &mut conrod::UiCell,
     }
     if _app.overlay {
         if animated_canvas::Canvas::new()
-               .pad(200.0)
+               .padded_wh_of(ids.master, 50.0)
+               .middle_of(ids.master)
                .flow_down(&[(ids.overlaytop,
                              animated_canvas::Canvas::new()
                                  .color(color::GREY)
@@ -213,6 +214,7 @@ fn set_widgets(ui: &mut conrod::UiCell,
                                  .color(color::DARK_GREEN)
                                  .length(400.0))])
                .color(color::TRANSPARENT)
+               .parent(ids.master)
                .close_icon(rust_logo)
                .close_icon_src_rect(Rect::from_corners([27.0, 33.0], [117.0, 100.0]))
                .frame_rate(30)

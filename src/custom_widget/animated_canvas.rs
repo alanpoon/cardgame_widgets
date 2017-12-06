@@ -1,7 +1,7 @@
 //! The `Canvas` widget and related items.
 
 use conrod::{Color, Colorable, FontSize, Borderable, Labelable, Positionable, Sizeable, Theme, Ui,
-             UiCell, Widget, image};
+             UiCell, Widget, image, color};
 use conrod::position::{self, Dimensions, Padding, Place, Position, Range, Rect, Scalar};
 use conrod::position::Direction::{Forwards, Backwards};
 use conrod::text;
@@ -45,6 +45,8 @@ pub struct Canvas<'a> {
     pub maybe_title_bar_label: Option<&'a str>,
     /// A list of child **Canvas**ses as splits of this **Canvas** flowing in the given direction.
     pub maybe_splits: Option<FlowOfSplits<'a>>,
+    /// parent Id
+    pub parent_id: Option<widget::Id>,
     /// close icon image Id
     pub close_icon: Option<image::Id>,
     /// close icon image source rectange
@@ -62,6 +64,7 @@ widget_ids! {
     struct Ids {
         rectangle,
         title_bar,
+        close_icon_background,
         close_icon
     }
 }
@@ -119,9 +122,9 @@ pub struct Style {
     /// close icon dimension
     #[conrod(default="[80.0,80.0]")]
     pub close_icon_dim: Option<[f64; 2]>,
-    /// close icon position top right of corner
-    #[conrod(default="[20.0,20.0]")]
-    pub close_icon_pos: Option<[f64; 2]>,
+    /// close icon background color
+    #[conrod(default="color::LIGHT_BLUE")]
+    pub close_icon_color: Option<Color>,
 }
 
 /// A series of **Canvas** splits along with their unique identifiers.
@@ -165,6 +168,7 @@ impl<'a> Canvas<'a> {
             maybe_splits: None,
             close_icon: None,
             close_icon_src_rect: None,
+            parent_id: None,
         }
     }
 
@@ -177,7 +181,7 @@ impl<'a> Canvas<'a> {
         pub with_style { style = Style }
         pub frame_rate {style.frame_rate = Some(usize)}
         pub close_icon_dim {style.close_icon_dim = Some([f64;2])}
-        pub close_icon_pos {style.close_icon_pos=Some([f64;2])}
+        pub close_icon_color {style.close_icon_color=Some(Color)}
     }
 
     /// Set the length of the Split as an absolute scalar.
@@ -252,6 +256,11 @@ impl<'a> Canvas<'a> {
     /// Set a Rect for the close icon's image source rectangle
     pub fn close_icon_src_rect(mut self, _rect: Rect) -> Self {
         self.close_icon_src_rect = Some(_rect);
+        self
+    }
+    /// Set an parent Id for the close icon
+    pub fn parent(mut self, parentid: widget::Id) -> Self {
+        self.parent_id = Some(parentid);
         self
     }
 }
@@ -366,7 +375,6 @@ impl<'a> Widget for Canvas<'a> {
                 .place_on_kid_area(false)
                 .set(state.ids.title_bar, &mut ui);
         }
-        let mut first_split_id = None;
         // If we were given some child canvas splits, we should instantiate them.
         if let Some((direction, splits)) = maybe_splits {
 
@@ -406,31 +414,25 @@ impl<'a> Widget for Canvas<'a> {
                 Direction::X(direction) => {
                     match direction {
                         Forwards => {
-                            for (i, &(ref split_id, ref split)) in splits.iter().enumerate() {
+                            for (i, &(split_id, split)) in splits.iter().enumerate() {
                                 let w = length(&split, &ui);
                                 let split = match i {
-                                        0 => {
-                                            first_split_id = Some(split_id.clone());
-                                            split.clone().h(kid_area.h()).mid_left_of(id)
-                                        }
-                                        _ => split.clone().right(0.0),
+                                        0 => split.h(kid_area.h()).mid_left_of(id),
+                                        _ => split.right(0.0),
                                     }
                                     .w(w * _step);
-                                set_split(split_id.clone(), split, &mut ui);
+                                set_split(split_id, split, &mut ui);
                             }
                         }
                         Backwards => {
-                            for (i, &(ref split_id, ref split)) in splits.iter().enumerate() {
+                            for (i, &(split_id, split)) in splits.iter().enumerate() {
                                 let w = length(&split, &ui);
                                 let split = match i {
-                                        0 => {
-                                            first_split_id = Some(split_id.clone());
-                                            split.clone().h(kid_area.h()).mid_right_of(id)
-                                        }
-                                        _ => split.clone().left(0.0),
+                                        0 => split.h(kid_area.h()).mid_right_of(id),
+                                        _ => split.left(0.0),
                                     }
                                     .w(w * _step);
-                                set_split(split_id.clone(), split, &mut ui);
+                                set_split(split_id, split, &mut ui);
                             }
                         }
                     }
@@ -439,31 +441,25 @@ impl<'a> Widget for Canvas<'a> {
                 Direction::Y(direction) => {
                     match direction {
                         Forwards => {
-                            for (i, &(ref split_id, ref split)) in splits.iter().enumerate() {
+                            for (i, &(split_id, split)) in splits.iter().enumerate() {
                                 let h = length(&split, &ui);
                                 let split = match i {
-                                        0 => {
-                                            first_split_id = Some(split_id.clone());
-                                            split.clone().w(kid_area.w()).mid_bottom_of(id)
-                                        }
-                                        _ => split.clone().up(0.0),
+                                        0 => split.w(kid_area.w()).mid_bottom_of(id),
+                                        _ => split.up(0.0),
                                     }
                                     .h(h * _step);
-                                set_split(split_id.clone(), split, &mut ui);
+                                set_split(split_id, split, &mut ui);
                             }
                         }
                         Backwards => {
-                            for (i, &(ref split_id, ref split)) in splits.iter().enumerate() {
+                            for (i, &(split_id, split)) in splits.iter().enumerate() {
                                 let h = length(&split, &ui);
                                 let split = match i {
-                                        0 => {
-                                            first_split_id = Some(split_id.clone());
-                                            split.clone().w(kid_area.w()).mid_top_of(id)
-                                        }
-                                        _ => split.clone().down(0.0),
+                                        0 => split.w(kid_area.w()).mid_top_of(id),
+                                        _ => split.down(0.0),
                                     }
                                     .h(h * _step);
-                                set_split(split_id.clone(), split, &mut ui);
+                                set_split(split_id, split, &mut ui);
                             }
                         }
                     }
@@ -471,19 +467,22 @@ impl<'a> Widget for Canvas<'a> {
             }
 
         }
-        if let Some(_close_image) = self.close_icon {
+        if let (Some(_close_image), Some(_parent_id)) = (self.close_icon, self.parent_id) {
             let close_icon_dim = self.style.close_icon_dim(ui.theme());
-            let close_icon_pos = self.style.close_icon_pos(ui.theme());
+            widget::Rectangle::fill_with(close_icon_dim, self.style.close_icon_color(&ui.theme))
+                .parent(_parent_id)
+                .right_from(id, 0.0)
+                .align_top_of(id)
+                .w_h(close_icon_dim[0] * _step, close_icon_dim[1] * _step)
+                .set(state.ids.close_icon_background, ui);
             let mut _image = Image::new(_close_image);
             if let Some(_src_rect) = self.close_icon_src_rect {
                 _image = _image.source_rectangle(_src_rect);
             }
             let instr = ImageHoverStruct(_image, None, None);
             if ImageHover::new(instr)
-                   .w_h(close_icon_dim[0] * _step, close_icon_dim[1] * _step)
-                   .top_right_with_margins_on(first_split_id.unwrap_or(id),
-                                              close_icon_pos[1] * _step,
-                                              close_icon_pos[0] * _step)
+                   .wh_of(state.ids.close_icon_background)
+                   .middle_of(state.ids.close_icon_background)
                    .set(state.ids.close_icon, ui)
                    .was_clicked() {
                 state.update(|state| {

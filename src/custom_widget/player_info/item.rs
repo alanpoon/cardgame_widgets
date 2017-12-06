@@ -128,7 +128,7 @@ impl Widget for Icon {
             .graphics_for(id)
             .set(state.ids.image, ui);
         let fontsize = get_font_size_wh(h * 1.2, h * 1.2, &self.icon.1);
-        let font_id = self.style.label_font_id(&ui.theme).or(ui.fonts.ids().next());
+        // let font_id = self.style.label_font_id(&ui.theme).or(ui.fonts.ids().next());
         widget::Text::new(&self.icon.1)
             .w_h(h, h)
             .font_size(fontsize)
@@ -136,7 +136,7 @@ impl Widget for Icon {
             .parent(id)
             .graphics_for(id)
             .left_justify()
-            .and_then(font_id, widget::Text::font_id)
+            //.and_then(font_id, widget::Text::font_id)
             .color(self.style.label_color(&ui.theme))
             .set(state.ids.label, ui);
 

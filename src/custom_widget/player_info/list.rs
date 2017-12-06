@@ -114,13 +114,13 @@ impl<'a> Widget for List<'a> {
         };
 
         rectangle_fill(id, state.ids.rect, rect, rect_c, ui);
-        let font_id = self.style.label_font_id(&ui.theme).or(ui.fonts.ids().next());
+        //  let font_id = self.style.label_font_id(&ui.theme).or(ui.fonts.ids().next());
         if let Some(_a) = self.maybe_label {
             let fontsize = get_font_size_wh(_dim[0] * 0.5, _dim[1], _a);
             widget::Text::new(_a)
                 .top_left_with_margins_on(id, _dim[1] * 0.23, 0.0)
                 .font_size(fontsize)
-                .and_then(font_id, widget::Text::font_id)
+               // .and_then(font_id, widget::Text::font_id)
                 .color(default_color.plain_contrast())
                 .w(_dim[0] * 0.3)
                 .h_of(id)
@@ -165,14 +165,14 @@ impl<'a> Widget for List<'a> {
                 Event::Selection(id) => {
                     if let Some(_c) = state.selected {
                         if _c == id {
-                            self.overlay = false;
+                            *self.overlay = false;
                             state.update(|state| state.selected = None);
                         } else {
-                            self.overlay = true;
+                            *self.overlay = true;
                             state.update(|state| state.selected = Some(id));
                         }
                     } else {
-                        self.overlay = true;
+                        *self.overlay = true;
                         state.update(|state| state.selected = Some(id));
                     }
                 }
