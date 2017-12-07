@@ -18,3 +18,4 @@ pub mod bordered_image;
 pub mod image_panels;
 pub mod arrange_list;
 pub mod player_info;
+pub mod notification;
