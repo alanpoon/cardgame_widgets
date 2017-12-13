@@ -1,4 +1,4 @@
-use conrod::{ widget, Positionable, Widget, Color,Colorable};
+use conrod::{widget, Positionable, Widget, Color, Colorable};
 use text::get_font_size_hn;
 use std::time::Duration;
 use std::time::Instant;
@@ -10,7 +10,7 @@ pub struct Notification<'a> {
     #[conrod(common_builder)]
     common: widget::CommonBuilder,
     pub text: &'a str,
-    pub start:Instant,
+    pub start: Instant,
     /// See the Style struct below.
     style: Style,
 }
@@ -25,7 +25,7 @@ pub struct Style {
     pub num_lines: Option<f64>,
     /// Duration
     #[conrod(default="Duration::new(4,0)")]
-    pub duration:Option<Duration>
+    pub duration: Option<Duration>,
 }
 
 widget_ids! {
@@ -40,13 +40,12 @@ pub struct State {
     ids: Ids,
 }
 
-impl<'a> Notification<'a>
-{
+impl<'a> Notification<'a> {
     /// Create a button context to be built upon.
-    pub fn new(text: &'a str,start:Instant) -> Self {
+    pub fn new(text: &'a str, start: Instant) -> Self {
         Notification {
             text: text,
-            start:start,
+            start: start,
             common: widget::CommonBuilder::default(),
             style: Style::default(),
         }
@@ -59,8 +58,7 @@ impl<'a> Notification<'a>
 
 /// A custom Conrod widget must implement the Widget trait. See the **Widget** trait
 /// documentation for more details.
-impl<'a> Widget for Notification<'a>
-{
+impl<'a> Widget for Notification<'a> {
     /// The State struct that we defined above.
     type State = State;
     /// The Style struct that we defined using the `widget_style!` macro.
@@ -86,21 +84,21 @@ impl<'a> Widget for Notification<'a>
         // Finally, we'll describe how we want our widget drawn by simply instantiating the
         // necessary primitive graphics widgets.
         //
-        if self.start.elapsed() <self.style.duration(&ui.theme){
-              let (_, _, w, h) = rect.x_y_w_h();
-        let color = self.style.color(&ui.theme);
-        widget::Rectangle::fill_with([w,h],color)
-            .middle_of(id)
-            .parent(id)
-            .set(state.ids.rect,ui);
-        let n = self.style.num_lines(&ui.theme);
-        let font_size = get_font_size_hn(h,n);
-        widget::Text::new(self.text)
-            .font_size(font_size)
-            .color(color.plain_contrast())
-            .set(state.ids.text,ui);
+        if self.start.elapsed() < self.style.duration(&ui.theme) {
+            let (_, _, w, h) = rect.x_y_w_h();
+            let color = self.style.color(&ui.theme);
+            widget::Rectangle::fill_with([w, h], color)
+                .middle_of(id)
+                .parent(id)
+                .set(state.ids.rect, ui);
+            let n = self.style.num_lines(&ui.theme);
+            let font_size = get_font_size_hn(h, n);
+            widget::Text::new(self.text)
+                .font_size(font_size)
+                .color(color.plain_contrast())
+                .set(state.ids.text, ui);
         }
-      
+
     }
 }
 impl<'a> Colorable for Notification<'a> {

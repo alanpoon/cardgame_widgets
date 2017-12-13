@@ -19,7 +19,7 @@ widget_ids! {
     }
 }
 pub struct App {
-    now:Instant
+    now: Instant,
 }
 #[derive(Clone)]
 pub enum ConrodMessage {
@@ -47,9 +47,7 @@ fn main() {
     let mut old_captured_event: Option<ConrodMessage> = None;
     let mut captured_event: Option<ConrodMessage> = None;
     let sixteen_ms = std::time::Duration::from_millis(800);
-    let mut app = App {
-        now:Instant::now()
-    };
+    let mut app = App { now: Instant::now() };
 
     'render: loop {
         let mut to_break = false;
@@ -139,11 +137,11 @@ fn set_widgets(ui: &mut conrod::UiCell,
                _app: &mut App,
                rust_logo: conrod::image::Id) {
     widget::Canvas::new().color(color::LIGHT_BLUE).set(ids.master, ui);
-    Notification::new("Hellow",_app.now)
+    Notification::new("Hellow", _app.now)
         .color(color::GREY)
-        .padded_wh_of(ids.master,50.0)
+        .padded_wh_of(ids.master, 50.0)
         .middle_of(ids.master)
-        .set(ids.notification,ui);
+        .set(ids.notification, ui);
 
 }
 fn load_image(display: &glium::Display, path: &str) -> glium::texture::Texture2d {

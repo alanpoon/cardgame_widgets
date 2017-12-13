@@ -139,7 +139,12 @@ impl<'a, T, W, A> Widget for ArrangeList<'a, T, W, A>
             .graphics_for(id)
             .color(style.color(&ui.theme))
             .set(state.ids.rect, ui);
-
+        if self.values.is_empty() {
+            state.update(|state| {
+                             state.selected = None;
+                             state.s_widget_id = None;
+                         });
+        }
         let (mut events, scrollbar) = widget::ListSelect::single(self.values.len())
             .flow_right()
             .item_size(self.item_width)
