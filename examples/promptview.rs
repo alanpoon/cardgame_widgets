@@ -8,7 +8,7 @@ use conrod::{widget, color, Colorable, Widget, Positionable, Sizeable};
 use conrod::backend::glium::glium::{self, glutin, Surface};
 use conrod::event;
 
-use cardgame_widgets::custom_widget::promptview::{PromptView, PromptSender};
+use cardgame_widgets::custom_widget::promptview::{PromptView, PromptSendable};
 use std::time::Instant;
 use std::sync::mpsc::Sender;
 widget_ids! {
@@ -21,13 +21,13 @@ widget_ids! {
     }
 }
 pub struct App<PS>
-    where PS: PromptSender + Clone
+    where PS: PromptSendable + Clone
 {
     prompt: Option<(f64, String, Vec<(String, Box<Fn(PS)>)>)>,
 }
 #[derive(Clone)]
-pub struct PromptSendable(Sender<String>);
-impl PromptSender for PromptSendable {
+pub struct PromptSender(Sender<String>);
+impl PromptSendable for PromptSender {
     fn send(&self, msg: String) {
         self.0.send(msg).unwrap();
     }
@@ -65,8 +65,8 @@ fn main() {
                            }
                        });
 
-    let promptsender = PromptSendable(test_tx);
-    let mut app = App::<PromptSendable> {
+    let promptsender = PromptSender(test_tx);
+    let mut app = App::<PromptSender> {
         prompt: Some((0.5,
                       "asdsadasasd".to_owned(),
                       vec![("instruction 1".to_owned(),
@@ -169,24 +169,28 @@ fn main() {
 
 fn set_widgets(ui: &mut conrod::UiCell,
                ids: &mut Ids,
-               app: &mut App<PromptSendable>,
-               promptsender: PromptSendable) {
+               app: &mut App<PromptSender>,
+               promptsender: PromptSender) {
     widget::Canvas::new()
         .color(color::TRANSPARENT)
         .flow_down(&[(ids.body, widget::Canvas::new().color(color::DARK_BLUE)),
                      (ids.footer, widget::Canvas::new().color(color::DARK_GREEN).length(100.0))])
         .set(ids.master, ui);
-
-    let prompt_j = PromptView::new(&mut app.prompt, promptsender)
-        .padded_wh_of(ids.footer, 2.0)
-        .color(color::LIGHT_GREY)
-        .middle_of(ids.footer);
-    prompt_j.set(ids.promptview, ui);
     let j = widget::Button::new()
-        .middle_of(ids.body)
-        .color(color::BLACK.with_alpha(0.3))
+        .middle_of(ids.footer)
+        .color(color::GREEN)
+        .wh([200.0, 100.0])
         .set(ids.button_body, ui);
     if j.was_clicked() {
         println!("kkkk");
     }
+    if let &Some(_) = &app.prompt {
+        let prompt_j = PromptView::new(&mut app.prompt, promptsender)
+            .color(color::LIGHT_GREY)
+            .wh_of(ids.master)
+            .middle_of(ids.master);
+        prompt_j.set(ids.promptview, ui);
+    }
+
+
 }
