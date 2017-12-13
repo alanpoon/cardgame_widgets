@@ -4,7 +4,7 @@ extern crate cardgame_widgets;
 extern crate find_folder;
 extern crate image;
 pub mod support;
-use conrod::{widget, color, Colorable, Widget, Positionable, Sizeable, Labelable};
+use conrod::{widget, color, Colorable, Widget, Positionable, Sizeable};
 use conrod::backend::glium::glium::{self, glutin, Surface};
 use conrod::event;
 
@@ -23,8 +23,7 @@ widget_ids! {
 pub struct App<PS>
     where PS: PromptSender + Clone
 {
-    instructions: Vec<(&'static str, Box<Fn(PS)>)>,
-    overlay: bool,
+    prompt: Option<(f64, String, Vec<(String, Box<Fn(PS)>)>)>,
 }
 #[derive(Clone)]
 pub struct PromptSendable(Sender<String>);
@@ -68,19 +67,20 @@ fn main() {
 
     let promptsender = PromptSendable(test_tx);
     let mut app = App::<PromptSendable> {
-        instructions: vec![("instruction 1",
+        prompt: Some((0.5,
+                      "asdsadasasd".to_owned(),
+                      vec![("instruction 1".to_owned(),
                             Box::new(|ps| {
                                          let f = format!("{{'greedcommand':1}}");
 
                                          ps.send(f);
                                      })),
-                           ("instruction 2",
+                           ("instruction 2".to_owned(),
                             Box::new(|ps| {
                                          let f = format!("{{'greedcommand':2}}");
 
                                          ps.send(f);
-                                     }))],
-        overlay: true,
+                                     }))])),
     };
 
     'render: loop {
@@ -177,12 +177,10 @@ fn set_widgets(ui: &mut conrod::UiCell,
                      (ids.footer, widget::Canvas::new().color(color::DARK_GREEN).length(100.0))])
         .set(ids.master, ui);
 
-    let prompt_j = PromptView::new(&app.instructions,
-                                   (0.5, "asdsdasdadasdad"),
-                                   promptsender,
-                                   &mut app.overlay)
-            .padded_wh_of(ids.footer, 2.0)
-            .middle_of(ids.footer);
+    let prompt_j = PromptView::new(&mut app.prompt, promptsender)
+        .padded_wh_of(ids.footer, 2.0)
+        .color(color::LIGHT_GREY)
+        .middle_of(ids.footer);
     prompt_j.set(ids.promptview, ui);
     let j = widget::Button::new()
         .middle_of(ids.body)

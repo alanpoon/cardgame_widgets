@@ -1,4 +1,4 @@
-use conrod::{self, widget, Positionable, Widget, Sizeable, text, Labelable};
+use conrod::{self, widget, Positionable, Widget, Sizeable, text, Labelable, Colorable};
 pub trait PromptSender {
     fn send(&self, msg: String);
 }
@@ -11,10 +11,8 @@ pub struct PromptView<'a, PS>
     /// really have to worry about it.
     #[conrod(common_builder)]
     common: widget::CommonBuilder,
-    pub prompt: (f64, &'a str), //width%,text
-    pub label_closure: &'a Vec<(&'a str, Box<Fn(PS) + 'a>)>,
+    pub prompt: &'a mut Option<(f64, String, Vec<(String, Box<Fn(PS)>)>)>, //width%,text
     pub promptsender: PS,
-    pub overlay: &'a mut bool,
     /// See the Style struct below.
     style: Style,
 }
@@ -49,16 +47,12 @@ impl<'a, PS> PromptView<'a, PS>
     where PS: PromptSender + Clone + 'a
 {
     /// Create a button context to be built upon.
-    pub fn new(label_closure: &'a Vec<(&'a str, Box<Fn(PS) + 'a>)>,
-               prompt: (f64, &'a str),
-               promptsender: PS,
-               overlay: &'a mut bool)
+    pub fn new(prompt: &'a mut Option<(f64, String, Vec<(String, Box<Fn(PS)>)>)>,
+               promptsender: PS)
                -> Self {
         PromptView {
             prompt: prompt,
-            label_closure: label_closure,
             promptsender: promptsender,
-            overlay: overlay,
             common: widget::CommonBuilder::default(),
             style: Style::default(),
         }
@@ -101,19 +95,21 @@ impl<'a, PS> Widget for PromptView<'a, PS>
     /// update.
     fn update(self, args: widget::UpdateArgs<Self>) -> Self::Event {
         let widget::UpdateArgs { id, state, rect, ui, .. } = args;
-        let num = self.label_closure.len();
+
         let (_x, _y, w, h) = rect.x_y_w_h();
         let mut f1 = 16;
         let mut l1 = 2.0;
-        if self.overlay.clone() {
+        let mut should_close = false;
+        if let &mut Some(ref _z) = self.prompt {
+            let num = _z.2.len();
             while text::height(2, f1, l1) > 0.5 * h {
                 f1 -= 1;
                 l1 -= 0.2;
             }
             let color = self.style.color(&ui.theme);
-            widget::Rectangle::fill_with([w, h], color).middle_of(id).set(state.ids.rect);
-            widget::Text::new(self.prompt.1)
-                .w(self.prompt.0 * w)
+            widget::Rectangle::fill_with([w, h], color).middle_of(id).set(state.ids.rect, ui);
+            widget::Text::new(&_z.1)
+                .w(_z.0 * w)
                 .h(0.5 * h)
                 .color(color.plain_contrast())
                 .font_size(f1)
@@ -123,27 +119,30 @@ impl<'a, PS> Widget for PromptView<'a, PS>
             let (mut items, _) = widget::List::flow_right(num)
                 .down_from(state.ids.prompt, 0.0)
                 .item_size(100.0)
-                .w(w - self.prompt.0)
+                .w(w - _z.0)
                 .set(state.ids.list, ui);
-            let mut vec_iter = self.label_closure.iter();
-            while let (Some(&(label, ref closure)), Some(ref item)) =
+            let mut vec_iter = _z.2.iter();
+            while let (Some(&(ref label, ref closure)), Some(ref item)) =
                 (vec_iter.next(), items.next(ui)) {
 
                 let d = widget::Button::new()
-                    .w((w - self.prompt.0) / (num as f64))
+                    .w((w - _z.0) / (num as f64))
                     .h(0.3 * h)
-                    .label(label)
+                    .label(&label)
                     .label_color(color.plain_contrast())
                     .label_font_size(self.style.label_font_size(&ui.theme));
                 let dj = item.set(d, ui);
                 for _ in dj {
                     (*closure)(self.promptsender.clone());
-                    *self.overlay = false;
+
+                    should_close = true;
                 }
 
             }
         }
-
+        if should_close {
+            *self.prompt = None;
+        }
 
         Some(())
     }
