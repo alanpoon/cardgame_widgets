@@ -1,12 +1,13 @@
 use conrod::{self, widget, Positionable, Widget, Labelable, Colorable, Sizeable};
 use conrod::widget::{Rectangle, Oval};
+use conrod::widget::primitive::shape::oval::Full;
 use conrod::widget::button::{Button, Flat};
 pub trait Instructable<'a> {
     fn label(&self) -> &'a str;
     fn rect(&self, [f64; 2]) -> Rectangle;
     fn button(&self, [f64; 2]) -> Button<Flat>;
-    fn oval_one(&self, [f64; 2]) -> Option<Oval>;
-    fn oval_two(&self, [f64; 2]) -> Option<Oval>;
+    fn oval_one(&self, [f64; 2]) -> Option<Oval<Full>>;
+    fn oval_two(&self, [f64; 2]) -> Option<Oval<Full>>;
 }
 /// The type upon which we'll implement the `Widget` trait.
 #[derive(WidgetCommon)]

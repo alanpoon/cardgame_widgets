@@ -4,7 +4,7 @@ version = "0.1.0"
 authors = ["alanpoon"]
 
 [dependencies]
-conrod = { version ="0.56.0", features = ["glium","winit"]}
+conrod = { version ="0.57.0", features = ["glium","winit"]}
 conrod_derive = "0.1.0"
 
 [dev-dependencies]

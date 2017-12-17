@@ -1,5 +1,5 @@
 use conrod::{self, widget, Colorable, Positionable, Widget, Sizeable, color, Borderable, Ui, UiCell,
-             graph};
+             graph, Scalar};
 use std;
 const MARGIN: conrod::Scalar = 5.0;
 #[derive(Debug)]
@@ -32,6 +32,8 @@ pub struct Style {
     /// Specify a unique font for the label.
     #[conrod(default = "theme.font_id")]
     pub label_font_id: Option<Option<conrod::text::font::Id>>,
+    #[conrod(default = "90.0")]
+    pub bar_thickness: Option<Scalar>,
 }
 
 widget_ids! {
@@ -139,6 +141,7 @@ impl Items {
         }
     }
 }
+
 impl<'a> TabView<'a> {
     /// Create a button context to be built upon.
     pub fn new(tab_names: Vec<&'a str>) -> Self {
@@ -148,6 +151,9 @@ impl<'a> TabView<'a> {
             enabled: true,
             tab_names: tab_names,
         }
+    }
+    builder_methods!{
+        pub bar_thickness { style.bar_thickness = Some(f64) }
     }
 }
 
@@ -203,6 +209,7 @@ impl<'a> Widget for TabView<'a> {
             .label_color(color::WHITE)
             .w_h(w, h)
             .middle()
+            .bar_thickness(self.style.bar_thickness(&ui.theme))
             .border_color(color::LIGHT_CHARCOAL)
             .set(state.ids.tabs, ui);
 

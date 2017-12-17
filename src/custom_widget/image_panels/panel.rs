@@ -1,4 +1,4 @@
-use conrod::{self, widget, Positionable, Widget, Sizeable, color, Scalar, Color};
+use conrod::{self, widget, Positionable, Widget, Sizeable, color, Scalar, Color, FontSize};
 use custom_widget::image_panels::{item_history, Panelable};
 use std;
 
@@ -35,6 +35,12 @@ pub struct Style {
     /// The color of the border surrounding the Image List Item
     #[conrod(default = "theme.border_color")]
     pub border_color: Option<Color>,
+    /// The LabelColor
+    #[conrod(default = "theme.label_color")]
+    pub label_color: Option<Color>,
+    /// The font size of the Button's label.
+    #[conrod(default = "theme.font_size_medium")]
+    pub label_font_size: Option<FontSize>,
 }
 
 widget_ids! {
@@ -67,6 +73,8 @@ impl<'b, P> ImagePanels<'b, P>
         pub y_item_height {style.y_item_height = Some(f64)}
         pub border { style.border = Some(Scalar) }
         pub border_color { style.border_color = Some(Color) }
+         pub label_color{style.label_color = Some(Color)}
+        pub label_font_size { style.label_font_size = Some(FontSize) }
     }
 }
 

@@ -1,4 +1,4 @@
-use conrod::{widget, Positionable, Widget, Sizeable, color, Rect, Scalar, Color, Colorable};
+use conrod::{widget, Positionable, Widget, Sizeable, color, Rect, Scalar, Color, Colorable, FontSize};
 use std;
 use custom_widget::bordered_image::BorderedImage;
 use custom_widget::image_panels::{list_select, Panelable};
@@ -31,6 +31,12 @@ pub struct Style {
     /// The color of the border surrounding the Image List Item
     #[conrod(default = "theme.border_color")]
     pub border_color: Option<Color>,
+    /// The LabelColor
+    #[conrod(default = "theme.label_color")]
+    pub label_color: Option<Color>,
+    /// The font size of the Button's label.
+    #[conrod(default = "theme.font_size_medium")]
+    pub label_font_size: Option<FontSize>,
 }
 
 widget_ids! {
@@ -66,6 +72,8 @@ impl<'a, P> ItemHistory<'a, P>
         pub x_item_list { style.x_item_list = Some([f64;4]) }
         pub border { style.border = Some(Scalar) }
         pub border_color { style.border_color = Some(Color) }
+        pub label_color{style.label_color = Some(Color)}
+        pub label_font_size { style.label_font_size = Some(FontSize) }
     }
 }
 

@@ -1,4 +1,4 @@
-use conrod::{self, widget, Positionable, Widget, Sizeable, text, Labelable, Colorable, color};
+use conrod::{self, widget, Positionable, Widget, Sizeable, Labelable, Colorable, color};
 use custom_widget::animated_canvas;
 use custom_widget::pad_text_button;
 pub trait PromptSendable {
@@ -138,24 +138,23 @@ impl<'a, PS> Widget for PromptView<'a, PS>
                 .mid_top_with_margin_on(state.ids.rect, 0.1 * prompt_wh[1])
                 .set(state.ids.prompt, ui);
             let (mut items, _) = widget::List::flow_right(num)
-                .down_from(state.ids.prompt, 0.0)
+                .bottom_right_of(state.ids.prompt)
                 .align_middle_x_of(state.ids.rect)
+                .h(0.3 * prompt_wh[1])
                 .item_size(item_size)
                 .w(prompt_wh[0] - _z.0)
                 .set(state.ids.list, ui);
             let mut vec_iter = _z.2.iter();
             while let (Some(&(ref label, ref closure)), Some(ref item)) =
                 (vec_iter.next(), items.next(ui)) {
-                let d = pad_text_button::Button::new()
+                let d = pad_text_button::Button::new(2)
                     .w((prompt_wh[0] - _z.0) / (num as f64))
-                    .h(0.3 * prompt_wh[1])
                     .label(&label)
                     .label_color(color.plain_contrast())
                     .label_font_size(label_font_size);
                 let dj = item.set(d, ui);
                 for _ in dj {
                     (*closure)(self.promptsender.clone());
-
                     should_close = true;
                 }
 

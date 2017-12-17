@@ -36,6 +36,7 @@ widget_ids! {
 }
 pub struct App {
     hash: Vec<color::Color>,
+    blow_up: Option<usize>,
 }
 #[derive(Clone)]
 pub enum ConrodMessage {
@@ -69,6 +70,7 @@ fn main() {
     let sixteen_ms = std::time::Duration::from_millis(800);
     let mut app = App {
         hash: vec![color::DARK_YELLOW, color::YELLOW, color::DARK_BLUE, color::LIGHT_PURPLE],
+        blow_up: None,
     };
 
     'render: loop {
@@ -187,6 +189,7 @@ fn set_widgets(ui: &mut conrod::UiCell,
                        None);
     widget::Canvas::new().color(color::WHITE).set(ids.master, ui);
     let (_, _, scrollbar) = ArrangeList::new(&mut _app.hash,
+                                             &mut _app.blow_up,
                                              Box::new(move |v| {
         let i_h_struct = ImageHoverable(Image::new(rust_logo.clone()), None, None);
         ItemWidget::new(i_h_struct).color(v).border_color(color::YELLOW).border(20.0)

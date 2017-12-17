@@ -1,4 +1,4 @@
-use conrod::{widget, Positionable, Widget, Color, Colorable};
+use conrod::{widget, Positionable, Widget, Color, Colorable, Sizeable};
 use text::get_font_size_hn;
 use std::time::Duration;
 use std::time::Instant;
@@ -95,6 +95,9 @@ impl<'a> Widget for Notification<'a> {
             let font_size = get_font_size_hn(h, n);
             widget::Text::new(self.text)
                 .font_size(font_size)
+                .middle_of(id)
+                .wh_of(id)
+                .parent(id)
                 .color(color.plain_contrast())
                 .set(state.ids.text, ui);
         }

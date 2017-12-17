@@ -27,11 +27,13 @@ pub struct ArrangeList<'a, T, W, A>
     style: Style,
     values: &'a mut Vec<T>,
     widget_closure: Box<Fn(T) -> W>,
+    blow_up: &'a mut Option<usize>,
     item_width: f64,
     left_arrow: Option<A>,
     top_arrow: Option<A>,
     right_arrow: Option<A>,
     bottom_arrow: Option<A>,
+    corner_arrow: Option<A>,
 }
 
 #[derive(Copy, Clone, Debug, Default, PartialEq, WidgetStyle)]
@@ -67,17 +69,23 @@ impl<'a, T, W, A> ArrangeList<'a, T, W, A>
           A: Hoverable
 {
     /// Create a button context to be built upon.
-    pub fn new(values: &'a mut Vec<T>, widget_closure: Box<Fn(T) -> W>, item_width: f64) -> Self {
+    pub fn new(values: &'a mut Vec<T>,
+               blow_up: &'a mut Option<usize>,
+               widget_closure: Box<Fn(T) -> W>,
+               item_width: f64)
+               -> Self {
         ArrangeList {
             common: widget::CommonBuilder::default(),
             style: Style::default(),
             values: values,
             widget_closure: widget_closure,
+            blow_up: blow_up,
             item_width: item_width,
             left_arrow: None,
             top_arrow: None,
             right_arrow: None,
             bottom_arrow: None,
+            corner_arrow: None,
         }
     }
     builder_methods!{
@@ -99,6 +107,10 @@ impl<'a, T, W, A> ArrangeList<'a, T, W, A>
         self.bottom_arrow = Some(_h);
         self
     }
+    pub fn corner_arrow(mut self, _h: A) -> Self {
+        self.corner_arrow = Some(_h);
+        self
+    }
 }
 
 /// A custom Conrod widget must implement the Widget trait. See the **Widget** trait
@@ -114,7 +126,7 @@ impl<'a, T, W, A> Widget for ArrangeList<'a, T, W, A>
     type Style = Style;
     /// The event produced by instantiating the widget.
     ///
-    /// `Some` when an element exited, otherwise `None`.
+    /// `Some` when an element exited, otherwise `None`.,Selected_index
     type Event = (Option<T>, ExitBy, Option<widget::list::Scrollbar<widget::scroll::X>>);
 
     fn init_state(&self, id_gen: widget::id::Generator) -> Self::State {
@@ -139,12 +151,19 @@ impl<'a, T, W, A> Widget for ArrangeList<'a, T, W, A>
             .graphics_for(id)
             .color(style.color(&ui.theme))
             .set(state.ids.rect, ui);
-        if self.values.is_empty() {
-            state.update(|state| {
-                             state.selected = None;
-                             state.s_widget_id = None;
-                         });
+        if let Some(_s) = state.selected {
+            if _s >= self.values.len() {
+                state.update(|state| {
+                    if self.values.len() == 0 {
+                        state.selected = None;
+                        state.s_widget_id = None;
+                    } else {
+                        state.selected = Some(self.values.len() - 1);
+                    };
+                });
+            }
         }
+
         let (mut events, scrollbar) = widget::ListSelect::single(self.values.len())
             .flow_right()
             .item_size(self.item_width)
@@ -265,6 +284,22 @@ impl<'a, T, W, A> Widget for ArrangeList<'a, T, W, A>
                                          state.s_widget_id = None;
                                      });
                         exit_by = ExitBy::Bottom;
+                    }
+                }
+            }
+        }
+        if let (Some(_a), Some(_s_id)) = (self.corner_arrow, state.s_widget_id) {
+            let j = ImageHover::new(_a)
+                .w_h(arrow_size, arrow_size)
+                .align_middle_x_of(_s_id)
+                .down_from(_s_id, -arrow_size)
+                .set(state.ids.bottom_a, ui);
+            if let Some(_s) = state.selected {
+                for _c in j {
+                    if let &mut Some(_b) = self.blow_up {
+                        *self.blow_up = None;
+                    } else {
+                        *self.blow_up = Some(_s.clone());
                     }
                 }
             }
