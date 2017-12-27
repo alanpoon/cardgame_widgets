@@ -53,6 +53,7 @@ widget_ids! {
       top_a,
       right_a,
       bottom_a,
+      corner_a
     }
 }
 
@@ -291,9 +292,8 @@ impl<'a, T, W, A> Widget for ArrangeList<'a, T, W, A>
         if let (Some(_a), Some(_s_id)) = (self.corner_arrow, state.s_widget_id) {
             let j = ImageHover::new(_a)
                 .w_h(arrow_size, arrow_size)
-                .align_middle_x_of(_s_id)
-                .down_from(_s_id, -arrow_size)
-                .set(state.ids.bottom_a, ui);
+                .top_right_of(_s_id)
+                .set(state.ids.corner_a, ui);
             if let Some(_s) = state.selected {
                 for _c in j {
                     if let &mut Some(_b) = self.blow_up {

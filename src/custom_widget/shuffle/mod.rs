@@ -1,18 +1,20 @@
 use conrod::{widget, Positionable, Widget, Sizeable, UiCell};
 use conrod::widget::primitive::image::Image;
-
-/// The type upon which we'll implement the `Widget` trait.
+use std::fmt::Debug;
+use std::marker::Send;
 #[derive(WidgetCommon)]
-pub struct Shuffle {
-    /// An object that handles some of the dirty work of rendering a GUI. We don't
-    /// really have to worry about it.
+pub struct Shuffle<'a, T, W>
+    where T: Clone + Send + 'a + Debug,
+          W: Widget
+{
     #[conrod(common_builder)]
     common: widget::CommonBuilder,
-    pub front_cards: Vec<Image>,
-    pub back_card: Image,
-    pub give_out: Option<Vec<usize>>,
     /// See the Style struct below.
     style: Style,
+    values: &'a Vec<T>,
+    widget_closure: Box<Fn(T) -> W>,
+    pub back_card: Image,
+    pub give_out: Option<Vec<usize>>,
 }
 #[derive(Debug)]
 enum AniState {
@@ -31,7 +33,6 @@ pub struct Style {
     #[conrod(default="60")]
     pub close_frame_rate: Option<u16>,
 }
-
 widget_ids! {
     struct Ids {
         listview,
@@ -40,7 +41,6 @@ widget_ids! {
         backview2
     }
 }
-
 /// Represents the unique, cached state for our CardViewPartial widget.
 pub struct State {
     ids: Ids,
@@ -48,11 +48,15 @@ pub struct State {
     num_closed: i8,
 }
 
-impl Shuffle {
+impl<'a, T, W> Shuffle<'a, T, W>
+    where T: Clone + Send + 'a + Debug,
+          W: Widget
+{
     /// Create a button context to be built upon.
-    pub fn new(front_cards: Vec<Image>, back_card: Image) -> Self {
+    pub fn new(values: &'a Vec<T>, widget_closure: Box<Fn(T) -> W>, back_card: Image) -> Self {
         Shuffle {
-            front_cards: front_cards,
+            values: values,
+            widget_closure: widget_closure,
             back_card: back_card,
             give_out: None,
             common: widget::CommonBuilder::default(),
@@ -71,7 +75,10 @@ impl Shuffle {
 
 /// A custom Conrod widget must implement the Widget trait. See the **Widget** trait
 /// documentation for more details.
-impl Widget for Shuffle {
+impl<'a, T, W> Widget for Shuffle<'a, T, W>
+    where T: Clone + Send + 'a + Debug,
+          W: Widget
+{
     /// The State struct that we defined above.
     type State = State;
     /// The Style struct that we defined using the `widget_style!` macro.
@@ -98,7 +105,7 @@ impl Widget for Shuffle {
     fn update(self, args: widget::UpdateArgs<Self>) -> Self::Event {
         let widget::UpdateArgs { id, state, ui, .. } = args;
         let image_dim = self.style.image_dim(ui.theme());
-        let len = self.front_cards.len();
+        let len = self.values.len();
         if state.ids.items.len() < len {
             let id_gen = &mut ui.widget_id_generator();
             state.update(|state| state.ids.items.resize(len, id_gen));
@@ -106,18 +113,18 @@ impl Widget for Shuffle {
         let close_frame_rate = self.style.close_frame_rate(ui.theme()); //frames to slot the last card to the back of its previous
         let item_c = state.ids.items.clone();
         let mut item_iter = item_c.iter().enumerate();
-        let mut image_iter = self.front_cards.iter();
+        let mut value_iter = self.values.iter();
         let mut num_closed = state.num_closed.clone();
         let step_state =
             if state.frame <= close_frame_rate {
                 AniState::Waitthen
-            } else if state.frame <= close_frame_rate * (self.front_cards.len() + 1) as u16 {
+            } else if state.frame <= close_frame_rate * (self.values.len() + 1) as u16 {
                 AniState::Keep(state.frame % close_frame_rate)
-            } else if state.frame <= close_frame_rate * (self.front_cards.len() + 2) as u16 {
+            } else if state.frame <= close_frame_rate * (self.values.len() + 2) as u16 {
                 AniState::Backview
-            } else if state.frame <= close_frame_rate * (self.front_cards.len() + 3) as u16 {
+            } else if state.frame <= close_frame_rate * (self.values.len() + 3) as u16 {
                 AniState::Shuffle(state.frame % close_frame_rate)
-            } else if state.frame <= close_frame_rate * (self.front_cards.len() * 2 + 4) as u16 {
+            } else if state.frame <= close_frame_rate * (self.values.len() * 2 + 4) as u16 {
                 if let Some(_) = self.give_out {
                     AniState::Giveout(state.frame % close_frame_rate)
                 } else {
@@ -130,18 +137,20 @@ impl Widget for Shuffle {
 
         match step_state {
             AniState::Waitthen => {
-                while let (Some((_i, &_sym)), Some(&_image)) =
-                    (item_iter.next(), image_iter.next()) {
+                while let (Some((_i, ref _sym)), Some(ref _value)) =
+                    (item_iter.next(), value_iter.next()) {
                     let k = _i as f64;
-                    _image.w_h(image_dim[0], image_dim[1])
+                    (*self.widget_closure)(_value.clone().clone())
+                        .w_h(image_dim[0], image_dim[1])
                         .mid_left_with_margin_on(id, k * image_dim[0])
-                        .set(_sym, ui);
+                        .set(_sym.clone().clone(), ui);
                 }
             }
             AniState::Keep(_step) => {
-                while let (Some((_i, &_sym)), Some(&_image)) =
-                    (item_iter.next(), image_iter.next()) {
+                while let (Some((_i, ref _sym)), Some(ref _value)) =
+                    (item_iter.next(), value_iter.next()) {
                     let k = _i as f64;
+                    let _widget = (*self.widget_closure)(_value.clone().clone());
                     render_movable(k,
                                    len,
                                    state.frame.clone() - close_frame_rate,
@@ -150,9 +159,9 @@ impl Widget for Shuffle {
                                    num_closed,
                                    image_dim,
                                    id,
-                                   _image,
+                                   _widget,
                                    Direction::Left,
-                                   _sym,
+                                   _sym.clone().clone(),
                                    ui);
                 }
                 let sign: i8 = -1;
@@ -181,22 +190,23 @@ impl Widget for Shuffle {
             AniState::Giveout(_step) => {
                 let give_out_c = self.give_out.clone().unwrap();
                 let mut give_out_iter = give_out_c.iter();
-                while let (Some((_i, &_sym)), Some(&_giveout)) =
+                while let (Some((_i, ref _sym)), Some(&_giveout)) =
                     (item_iter.next(), give_out_iter.next()) {
-                    if let Some(&_image) = self.front_cards.get(_giveout) {
+                    if let Some(ref _value) = self.values.get(_giveout) {
                         let k = _i as f64;
+                        let _widget = (*self.widget_closure)(_value.clone().clone());
                         render_movable(k,
                                        len,
                                        state.frame.clone() -
-                                       close_frame_rate * (self.front_cards.len() as u16 + 3),
+                                       close_frame_rate * (self.values.len() as u16 + 3),
                                        close_frame_rate,
                                        _step,
                                        num_closed,
                                        image_dim,
                                        id,
-                                       _image,
+                                       _widget,
                                        Direction::Right,
-                                       _sym,
+                                       _sym.clone().clone(),
                                        ui);
                     }
                 }
@@ -227,18 +237,18 @@ enum Direction {
     Right,
     Left,
 }
-fn render_movable(k: f64,
-                  len: usize,
-                  frame: u16,
-                  close_frame_rate: u16,
-                  _step: u16,
-                  num_closed: i8,
-                  image_dim: [f64; 2],
-                  id: widget::Id,
-                  _image: widget::Image,
-                  direction: Direction,
-                  _sym: widget::id::Id,
-                  ui: &mut UiCell) {
+fn render_movable<T: Widget>(k: f64,
+                             len: usize,
+                             frame: u16,
+                             close_frame_rate: u16,
+                             _step: u16,
+                             num_closed: i8,
+                             image_dim: [f64; 2],
+                             id: widget::Id,
+                             _widget: T,
+                             direction: Direction,
+                             _sym: widget::id::Id,
+                             ui: &mut UiCell) {
     let (sign, image_to_move, less_than_show): (f64, f64, f64) = if let Direction::Left =
         direction {
         (image_dim[0] * (1.0 / close_frame_rate as f64) * _step as f64,
@@ -255,9 +265,9 @@ fn render_movable(k: f64,
         } else {
             0.0
         };
-        _image.w_h(image_dim[0], image_dim[1]).mid_left_with_margin_on(id, dis).set(_sym, ui);
+        _widget.w_h(image_dim[0], image_dim[1]).mid_left_with_margin_on(id, dis).set(_sym, ui);
     } else if k < less_than_show {
-        _image.w_h(image_dim[0], image_dim[1])
+        _widget.w_h(image_dim[0], image_dim[1])
             .mid_left_with_margin_on(id, k * image_dim[0])
             .set(_sym, ui);
     }
