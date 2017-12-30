@@ -156,3 +156,6 @@ enum Interaction {
     Hover,
     Press,
 }
+pub trait Bordered {
+    fn bordered(self) -> Self;
+}

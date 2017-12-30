@@ -19,3 +19,4 @@ pub mod image_panels;
 pub mod arrange_list;
 pub mod player_info;
 pub mod notification;
+pub mod progress_bar;

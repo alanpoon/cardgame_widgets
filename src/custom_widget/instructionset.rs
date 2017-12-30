@@ -139,7 +139,8 @@ impl<'a, I> Widget for InstructionSet<'a, I>
                 .font_id(font_id.unwrap())
                 .color(style.label_color(&ui.theme))
                 .font_size(style.label_font_size(&ui.theme))
-                .padded_wh_of(state.ids.frame, 0.1 * _rw)
+                .padded_w_of(state.ids.frame, 0.1 * _rw)
+                .padded_h_of(state.ids.frame, 0.1 * _rh)
                 .top_left_with_margins_on(state.ids.frame, 0.1 * _rh, 0.1 * _rw)
                 .set(state.ids.instruction, ui);
 

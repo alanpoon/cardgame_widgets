@@ -1,8 +1,9 @@
-use conrod::{widget, Positionable, Widget, Sizeable, color, Rect, Scalar, Color, Colorable, FontSize};
+use conrod::{widget, Positionable, Widget, Sizeable, color, Rect, Scalar, Color, Colorable,
+             FontSize, Borderable};
 use std;
-use custom_widget::bordered_image::BorderedImage;
-use custom_widget::image_panels::{list_select, Panelable};
 
+use custom_widget::image_panels::{list_select, Panelable};
+use custom_widget::bordered_image::Bordered;
 /// The type upon which we'll implement the `Widget` trait.
 #[derive(WidgetCommon)]
 pub struct ItemHistory<'a, P>
@@ -139,8 +140,7 @@ impl<'a, P> Widget for ItemHistory<'a, P>
             .scroll_kids_vertically()
             .set(state.ids.rect, ui);
         let item_h = style.x_item_list(&ui.theme)[0];
-        let list_image = self.panel_info.list_image().clone();
-        let (mut events, scrollbar) = list_select::ListSelect::multiple(list_image.len())
+        let (mut events, scrollbar) = list_select::ListSelect::multiple(self.panel_info.len())
             .flow_right()
             .item_size(item_h)
             .scrollbar_next_to()
@@ -149,22 +149,16 @@ impl<'a, P> Widget for ItemHistory<'a, P>
                                       style.x_item_list(&ui.theme)[3],
                                       style.x_item_list(&ui.theme)[2])
             .set(state.ids.image_panel, ui);
-        let list_image_c = self.panel_info.list_image().clone();
-
         while let Some(event) = events.next(ui, |i| self.panel_info.list_selected().contains(&i)) {
             use self::list_select::Event;
             match event {
                 // For the `Item` events we instantiate the `List`'s items.
                 Event::Item(item) => {
-                    let &(ref _image_id, ref _rect, _) = list_image_c.get(item.i).unwrap();
-                    let _rect_c = _rect.clone();
                     let mut j = match self.panel_info.list_selected().contains(&item.i) {
-                        true => BorderedImage::new(_image_id.clone()).bordered(),
-                        false => BorderedImage::new(_image_id.clone()),
+                        true => self.panel_info.apply_closure(item.i).bordered(),
+                        false => self.panel_info.apply_closure(item.i),
                     };
-                    if let Some(_rect) = _rect_c {
-                        j = j.source_rectangle(Rect::from_corners(_rect.0, _rect.1))
-                    }
+
                     j = j.border(style.border(&ui.theme))
                         .border_color(style.border_color(&ui.theme))
                         .w_h(style.x_item_list(&ui.theme)[0],

@@ -292,7 +292,7 @@ impl<'a, T, W, A> Widget for ArrangeList<'a, T, W, A>
         if let (Some(_a), Some(_s_id)) = (self.corner_arrow, state.s_widget_id) {
             let j = ImageHover::new(_a)
                 .w_h(arrow_size, arrow_size)
-                .top_right_of(_s_id)
+                .top_right_with_margin_on(_s_id, -2.0)
                 .set(state.ids.corner_a, ui);
             if let Some(_s) = state.selected {
                 for _c in j {
