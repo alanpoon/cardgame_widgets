@@ -19,6 +19,7 @@ pub struct InstructionSet<'a, I>
     #[conrod(common_builder)]
     common: widget::CommonBuilder,
     pub instructions: &'a Vec<I>, //str,[l,t,w,h of rect],Some([l,t,w,h of oval])
+    pub instruction_cache: &'a mut usize,
     pub next: &'a str,
     /// See the Style struct below.
     style: Style,
@@ -54,7 +55,6 @@ widget_ids! {
 /// Represents the unique, cached state for our InstructionSet widget.
 pub struct State {
     ids: Ids,
-    index: usize,
     frame: usize,
 }
 
@@ -62,9 +62,10 @@ impl<'a, I> InstructionSet<'a, I>
     where I: Instructable<'a> + 'a
 {
     /// Create a button context to be built upon.
-    pub fn new(instructions: &'a Vec<I>, next: &'a str) -> Self {
+    pub fn new(instructions: &'a Vec<I>, instruction_cache: &'a mut usize, next: &'a str) -> Self {
         InstructionSet {
             instructions: instructions,
+            instruction_cache: instruction_cache,
             next: next,
             common: widget::CommonBuilder::default(),
             style: Style::default(),
@@ -104,7 +105,6 @@ impl<'a, I> Widget for InstructionSet<'a, I>
     fn init_state(&self, id_gen: widget::id::Generator) -> Self::State {
         State {
             ids: Ids::new(id_gen),
-            index: 0,
             frame: 0,
         }
     }
@@ -126,7 +126,7 @@ impl<'a, I> Widget for InstructionSet<'a, I>
             (rect.x_y_w_h(), id)
         };
 
-        if let Some(_inst) = self.instructions.get(state.index) {
+        if let Some(_inst) = self.instructions.get(self.instruction_cache.clone()) {
             let (_label, _rect, _button, _oval_one, _oval_two) = (_inst.label(),
                                                                   _inst.rect([w, h]),
                                                                   _inst.button([w, h]),
@@ -149,10 +149,10 @@ impl<'a, I> Widget for InstructionSet<'a, I>
                 .parent(state.ids.frame)
                 .set(state.ids.next, ui);
             for _ in j {
-                if state.index + 1 == len {
+                if self.instruction_cache.clone() + 1 == len {
                     print = false;
                 } else {
-                    state.update(|state| state.index += 1);
+                    *self.instruction_cache += 1;
                 }
 
             }

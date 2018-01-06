@@ -118,7 +118,7 @@ impl<'a> Widget for List<'a> {
         if let Some(_a) = self.maybe_label {
             let fontsize = get_font_size_wh(_dim[0] * 0.5, _dim[1], _a);
             widget::Text::new(_a)
-                .top_left_with_margins_on(id, _dim[1] * 0.23, 0.0)
+                .top_left_with_margins_on(id, _dim[1] * 0.1, 0.0)
                 .font_size(fontsize)
                // .and_then(font_id, widget::Text::font_id)
                 .color(default_color.plain_contrast())
@@ -196,22 +196,23 @@ impl<'a> Widget for List<'a> {
         let points = once(left).chain(once(top)).chain(once(right));
         if (state.frame as f64 / 60.0).floor() == lefz {
             widget::PointPath::centred(points.clone())
-                .w(10.0)
-                .h(10.0)
+              //  .w(10.0)
+               // .h(10.0)
                 .align_middle_y_of(state.ids.icon_vec)
                 .right_from(state.ids.icon_vec, 5.0)
                 .set(state.ids.arrow1, ui);
         } else if (state.frame as f64 / 60.0).floor() == midz {
             widget::PointPath::centred(points.clone())
-                .w(10.0)
-                .h(10.0)
+              //  .w(10.0)
+              //  .h(10.0)
                 .align_middle_y_of(state.ids.icon_vec)
                 .right_from(state.ids.arrow1, 5.0)
                 .set(state.ids.arrow2, ui);
         } else if (state.frame as f64 / 60.0).floor() == rigz {
             widget::PointPath::centred(points)
-                .w(20.0)
-                .h(10.0)
+                //.w(20.0)
+              //  .w(10.0)
+              //  .h(10.0)
                 .align_middle_y_of(state.ids.icon_vec)
                 .right_from(state.ids.arrow2, 5.0)
                 .set(state.ids.arrow3, ui);

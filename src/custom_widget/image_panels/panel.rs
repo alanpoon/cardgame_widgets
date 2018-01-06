@@ -1,17 +1,21 @@
 use conrod::{self, widget, Positionable, Widget, Sizeable, color, Scalar, Color, FontSize};
 use custom_widget::image_panels::{item_history, Panelable};
+use custom_widget::image_hover::Hoverable;
 use std;
 
 /// The type upon which we'll implement the `Widget` trait.
 #[derive(WidgetCommon)]
-pub struct ImagePanels<'b, P>
-    where P: Panelable + 'b
+pub struct ImagePanels<'b, P, A>
+    where P: Panelable + 'b,
+          A: Hoverable + Clone
 {
     /// An object that handles some of the dirty work of rendering a GUI. We don't
     /// really have to worry about it.
     #[conrod(common_builder)]
     common: widget::CommonBuilder,
     pub panel_infos: &'b mut Vec<P>,
+    pub overlay_blowup: &'b mut Option<usize>,
+    pub corner_arrow: Option<A>,
     /// See the Style struct below.
     style: Style,
 }
@@ -54,18 +58,24 @@ pub struct State {
     ids: Ids,
 }
 
-impl<'b, P> ImagePanels<'b, P>
-    where P: Panelable + 'b
+impl<'b, P, A> ImagePanels<'b, P, A>
+    where P: Panelable + 'b,
+          A: Hoverable + Clone
 {
     /// Create a button context to be built upon.
-    pub fn new(panel_infos: &'b mut Vec<P>) -> Self {
+    pub fn new(panel_infos: &'b mut Vec<P>, overlay_blowup: &'b mut Option<usize>) -> Self {
         ImagePanels {
             panel_infos: panel_infos,
+            overlay_blowup: overlay_blowup,
             common: widget::CommonBuilder::default(),
             style: Style::default(),
+            corner_arrow: None,
         }
     }
-
+    pub fn corner_arrow(mut self, _h: A) -> Self {
+        self.corner_arrow = Some(_h);
+        self
+    }
     builder_methods!{
         pub item_rect { style.item_rect = Some((conrod::Color,[f64;3])) }
         pub display_pic { style.display_pic = Some([f64;4]) }
@@ -73,15 +83,16 @@ impl<'b, P> ImagePanels<'b, P>
         pub y_item_height {style.y_item_height = Some(f64)}
         pub border { style.border = Some(Scalar) }
         pub border_color { style.border_color = Some(Color) }
-         pub label_color{style.label_color = Some(Color)}
+        pub label_color{style.label_color = Some(Color)}
         pub label_font_size { style.label_font_size = Some(FontSize) }
     }
 }
 
 /// A custom Conrod widget must implement the Widget trait. See the **Widget** trait
 /// documentation for more details.
-impl<'b, P> Widget for ImagePanels<'b, P>
-    where P: Panelable + 'b
+impl<'b, P, A> Widget for ImagePanels<'b, P, A>
+    where P: Panelable + 'b,
+          A: Hoverable + Clone
 {
     /// The State struct that we defined above.
     type State = State;
@@ -112,10 +123,15 @@ impl<'b, P> Widget for ImagePanels<'b, P>
             .wh_of(id)
             .set(state.ids.panel, ui);
         let mut panel_iter = self.panel_infos.iter_mut();
-        while let (Some(item), Some(_panel)) = (items.next(ui), panel_iter.next()) {
-            //let i = item.i;
-            let j = item_history::ItemHistory::new(_panel);
-            item.set(j, ui);
+        if let Some(_corner_arrow) = self.corner_arrow {
+            while let (Some(item), Some(_panel)) = (items.next(ui), panel_iter.next()) {
+                //let i = item.i;
+                let mut j = item_history::ItemHistory::new(_panel, self.overlay_blowup);
+
+                j = j.corner_arrow(_corner_arrow.clone());
+
+                item.set(j, ui);
+            }
         }
 
         if let Some(s) = scrollbar {

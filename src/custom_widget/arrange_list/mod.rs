@@ -1,7 +1,7 @@
 use conrod::{self, widget, Positionable, Widget, Colorable, Sizeable, Color};
 use std::fmt::Debug;
 use std::marker::Send;
-pub use custom_widget::image_hover::{TimesClicked, Hoverable, ImageHover};
+pub use custom_widget::image_hover::{Hoverable, ImageHover, TimesClicked};
 pub mod item;
 pub use custom_widget::arrange_list::item::ItemWidget;
 pub trait Arrangeable {
@@ -27,6 +27,7 @@ pub struct ArrangeList<'a, T, W, A>
     style: Style,
     values: &'a mut Vec<T>,
     widget_closure: Box<Fn(T) -> W>,
+    blow_up_closure: Box<Fn(T) -> usize>,
     blow_up: &'a mut Option<usize>,
     item_width: f64,
     left_arrow: Option<A>,
@@ -73,6 +74,7 @@ impl<'a, T, W, A> ArrangeList<'a, T, W, A>
     pub fn new(values: &'a mut Vec<T>,
                blow_up: &'a mut Option<usize>,
                widget_closure: Box<Fn(T) -> W>,
+               blow_up_closure: Box<Fn(T) -> usize>,
                item_width: f64)
                -> Self {
         ArrangeList {
@@ -80,6 +82,7 @@ impl<'a, T, W, A> ArrangeList<'a, T, W, A>
             style: Style::default(),
             values: values,
             widget_closure: widget_closure,
+            blow_up_closure: blow_up_closure,
             blow_up: blow_up,
             item_width: item_width,
             left_arrow: None,
@@ -172,6 +175,7 @@ impl<'a, T, W, A> Widget for ArrangeList<'a, T, W, A>
             .wh_of(state.ids.rect)
             .middle_of(state.ids.rect)
             .set(state.ids.list_select, ui);
+
         while let Some(event) = events.next(ui, |i| {
             let mut y = false;
             if let Some(_x) = state.selected {
@@ -295,11 +299,27 @@ impl<'a, T, W, A> Widget for ArrangeList<'a, T, W, A>
                 .top_right_with_margin_on(_s_id, -2.0)
                 .set(state.ids.corner_a, ui);
             if let Some(_s) = state.selected {
+                if let &mut Some(_b) = self.blow_up {
+                    let k_h = self.values.get(_s).unwrap();
+                    let k = (*self.blow_up_closure)(k_h.clone());
+                    if _b != k {
+                        *self.blow_up = Some(k);
+                    }
+                }
                 for _c in j {
                     if let &mut Some(_b) = self.blow_up {
-                        *self.blow_up = None;
+                        let k_h = self.values.get(_s).unwrap();
+                        let k = (*self.blow_up_closure)(k_h.clone());
+                        if _b == k {
+                            *self.blow_up = None;
+                        } else {
+                            *self.blow_up = Some(k);
+                        }
+
                     } else {
-                        *self.blow_up = Some(_s.clone());
+                        let k_h = self.values.get(_s).unwrap();
+                        let k = (*self.blow_up_closure)(k_h.clone());
+                        *self.blow_up = Some(k);
                     }
                 }
             }

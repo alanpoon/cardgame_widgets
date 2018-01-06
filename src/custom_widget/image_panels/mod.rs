@@ -16,4 +16,5 @@ pub trait Panelable {
     fn list_selected<'a>(&'a self) -> &'a HashSet<usize, RandomState>;
     fn list_selected_mut<'a>(&'a mut self) -> &'a mut HashSet<usize, RandomState>;
     fn apply_closure(&self, usize) -> Self::BorderableBorderedWidget;
+    fn card_index(&self, usize) -> usize;
 }

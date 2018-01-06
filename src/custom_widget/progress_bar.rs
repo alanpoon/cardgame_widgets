@@ -1,4 +1,6 @@
-use conrod::{widget, Positionable, Widget, Scalar, FontSize, text, Color, Labelable, Colorable};
+use conrod::{widget, Positionable, Widget, Scalar, FontSize, text, Color, Labelable, Colorable,
+             color};
+use conrod::widget::primitive::line;
 /// The type upon which we'll implement the `Widget` trait.
 #[derive(WidgetCommon)]
 pub struct ProgressBar<'a> {
@@ -45,7 +47,7 @@ pub struct State {
 
 impl<'a> ProgressBar<'a> {
     /// Create a button context to be built upon.
-    pub fn new(len: usize, num_asset: usize) -> Self {
+    pub fn new(num_asset: usize, len: usize) -> Self {
         ProgressBar {
             maybe_label: None,
             len: len,
@@ -89,12 +91,14 @@ impl<'a> Widget for ProgressBar<'a> {
         //
         let (_, _, w, h) = rect.x_y_w_h();
         // outer
-        widget::Rectangle::outline([w, h / 2.0]).set(state.ids.outline, ui);
-        let w_p = w / (self.num_asset * self.len) as f64;
+        let line_style = line::Style::solid().color(color::BLACK);
+        widget::Rectangle::outline_styled([w, h / 2.0], line_style).set(state.ids.outline, ui);
+        let w_p = (self.num_asset as f64 / self.len as f64);
         let border = self.style.border(&ui.theme);
-        widget::Rectangle::fill([w_p * (w - border * 2.0), h / 2.0 - border * 2.0])
-            .top_left_with_margin_on(state.ids.outline, border)
-            .set(state.ids.progressbar, ui);
+        widget::Rectangle::fill_with([w_p * (w - border * 2.0), h / 2.0 - border * 2.0],
+                                     color::LIGHT_GREEN)
+                .top_left_with_margin_on(state.ids.outline, border)
+                .set(state.ids.progressbar, ui);
         if let Some(_txt) = self.maybe_label {
             let color = self.style.label_color(&ui.theme);
             let font_size = self.style.label_font_size(&ui.theme);
