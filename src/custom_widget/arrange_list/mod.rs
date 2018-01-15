@@ -29,6 +29,7 @@ pub struct ArrangeList<'a, T, W, A>
     widget_closure: Box<Fn(T) -> W>,
     blow_up_closure: Box<Fn(T) -> usize>,
     blow_up: &'a mut Option<usize>,
+    show_selected: &'a mut Option<widget::Id>,
     item_width: f64,
     left_arrow: Option<A>,
     top_arrow: Option<A>,
@@ -43,6 +44,8 @@ pub struct Style {
     pub color: Option<conrod::Color>,
     #[conrod(default = "40.0")]
     pub arrow_size: Option<f64>,
+    #[conrod(default="10.0")]
+    pub scrollbar_thickness: Option<f64>,
 }
 
 widget_ids! {
@@ -72,6 +75,7 @@ impl<'a, T, W, A> ArrangeList<'a, T, W, A>
 {
     /// Create a button context to be built upon.
     pub fn new(values: &'a mut Vec<T>,
+               show_selected: &'a mut Option<widget::Id>,
                blow_up: &'a mut Option<usize>,
                widget_closure: Box<Fn(T) -> W>,
                blow_up_closure: Box<Fn(T) -> usize>,
@@ -81,6 +85,7 @@ impl<'a, T, W, A> ArrangeList<'a, T, W, A>
             common: widget::CommonBuilder::default(),
             style: Style::default(),
             values: values,
+            show_selected: show_selected,
             widget_closure: widget_closure,
             blow_up_closure: blow_up_closure,
             blow_up: blow_up,
@@ -94,6 +99,7 @@ impl<'a, T, W, A> ArrangeList<'a, T, W, A>
     }
     builder_methods!{
         pub arrow_size {style.arrow_size=Some(f64)}
+        pub scrollbar_thickness{style.scrollbar_thickness=Some(f64)}
     }
     pub fn left_arrow(mut self, _h: A) -> Self {
         self.left_arrow = Some(_h);
@@ -155,6 +161,14 @@ impl<'a, T, W, A> Widget for ArrangeList<'a, T, W, A>
             .graphics_for(id)
             .color(style.color(&ui.theme))
             .set(state.ids.rect, ui);
+        if let &mut Some(_id) = self.show_selected {
+            if _id != id {
+                state.update(|state| {
+                                 state.selected = None;
+                                 state.s_widget_id = None;
+                             });
+            }
+        }
         if let Some(_s) = state.selected {
             if _s >= self.values.len() {
                 state.update(|state| {
@@ -171,7 +185,7 @@ impl<'a, T, W, A> Widget for ArrangeList<'a, T, W, A>
         let (mut events, scrollbar) = widget::ListSelect::single(self.values.len())
             .flow_right()
             .item_size(self.item_width)
-            .scrollbar_next_to()
+            .scrollbar_thickness(self.style.scrollbar_thickness(&ui.theme))
             .wh_of(state.ids.rect)
             .middle_of(state.ids.rect)
             .set(state.ids.list_select, ui);
@@ -200,6 +214,7 @@ impl<'a, T, W, A> Widget for ArrangeList<'a, T, W, A>
                     item.set(widget, ui);
                 }
                 Event::Selection(selected_id) => {
+                    *self.show_selected = Some(id);
                     state.update(|state| state.selected = Some(selected_id));
                 }
                 _ => {}
@@ -238,7 +253,10 @@ impl<'a, T, W, A> Widget for ArrangeList<'a, T, W, A>
                 for _c in j {
                     if self.values.len() > 1 {
                         exit_elem = Some(remove_by_index(_s, self.values));
-
+                        state.update(|state| {
+                                         state.selected = Some(_s - 1);
+                                         state.s_widget_id = None;
+                                     });
                     } else if self.values.len() == 1 {
                         exit_elem = Some(remove_by_index(_s, self.values));
                         state.update(|state| {
@@ -246,6 +264,7 @@ impl<'a, T, W, A> Widget for ArrangeList<'a, T, W, A>
                                          state.s_widget_id = None;
                                      });
                     }
+
                 }
             }
         }
@@ -281,7 +300,10 @@ impl<'a, T, W, A> Widget for ArrangeList<'a, T, W, A>
                     if self.values.len() > 1 {
                         exit_elem = Some(remove_by_index(_s, self.values));
                         exit_by = ExitBy::Bottom;
-
+                        state.update(|state| {
+                                         state.selected = Some(_s - 1);
+                                         state.s_widget_id = None;
+                                     });
                     } else if self.values.len() == 1 {
                         exit_elem = Some(remove_by_index(_s, self.values));
                         state.update(|state| {
@@ -300,6 +322,7 @@ impl<'a, T, W, A> Widget for ArrangeList<'a, T, W, A>
                 .set(state.ids.corner_a, ui);
             if let Some(_s) = state.selected {
                 if let &mut Some(_b) = self.blow_up {
+                    println!("_s:{:?}, len:{:?}",_s.clone(),self.values.len());
                     let k_h = self.values.get(_s).unwrap();
                     let k = (*self.blow_up_closure)(k_h.clone());
                     if _b != k {

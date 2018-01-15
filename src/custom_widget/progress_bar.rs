@@ -84,7 +84,7 @@ impl<'a> Widget for ProgressBar<'a> {
     /// Update the state of the button by handling any input that has occurred since the last
     /// update.
     fn update(self, args: widget::UpdateArgs<Self>) -> Self::Event {
-        let widget::UpdateArgs { id, state, rect, ui, .. } = args;
+        let widget::UpdateArgs { state, rect, ui, .. } = args;
 
         // Finally, we'll describe how we want our widget drawn by simply instantiating the
         // necessary primitive graphics widgets.
@@ -93,7 +93,7 @@ impl<'a> Widget for ProgressBar<'a> {
         // outer
         let line_style = line::Style::solid().color(color::BLACK);
         widget::Rectangle::outline_styled([w, h / 2.0], line_style).set(state.ids.outline, ui);
-        let w_p = (self.num_asset as f64 / self.len as f64);
+        let w_p = self.num_asset as f64 / self.len as f64;
         let border = self.style.border(&ui.theme);
         widget::Rectangle::fill_with([w_p * (w - border * 2.0), h / 2.0 - border * 2.0],
                                      color::LIGHT_GREEN)

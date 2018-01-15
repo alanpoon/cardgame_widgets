@@ -136,6 +136,7 @@ impl<'a, P, A> Widget for ItemHistory<'a, P, A>
                      style.display_pic(&ui.theme)[1])
                 .set(state.ids.display_pic, ui);
         }
+        let label_color = self.style.label_color(&ui.theme);
         if let Some(_z) = self.panel_info.text() {
             widget::Text::new(&_z)
                 .top_left_with_margins_on(id,
@@ -144,6 +145,7 @@ impl<'a, P, A> Widget for ItemHistory<'a, P, A>
                                           style.display_pic(&ui.theme)[0])
                 .w(140.0)
                 .h(40.0)
+                .color(label_color)
                 .set(state.ids.text, ui);
         }
 

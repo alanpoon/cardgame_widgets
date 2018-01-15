@@ -1,6 +1,5 @@
 use conrod::{widget, Color, Colorable, Positionable, UiCell, Widget, Sizeable, Rect, text};
 use custom_widget::player_info::item::{Icon, IconStruct};
-use std::iter::once;
 use text::get_font_size_wh;
 //Player_info list all player's item, at the end, there is some arrow animation that opens another overlay
 
@@ -35,9 +34,6 @@ widget_ids! {
     struct Ids {
         rect,
         icon_vec,
-        arrow1,
-        arrow2,
-        arrow3,
         player_info,
 
     }
@@ -181,42 +177,6 @@ impl<'a> Widget for List<'a> {
 
         }
 
-        let (left, top, right) = if self.overlay.clone() {
-            ([-_dim[0] * 0.2 / 3.0, -_dim[0] * 0.2 / 3.0],
-             [0.0, 0.0],
-             [-_dim[0] * 0.2 / 3.0, _dim[0] * 0.2 / 3.0])
-        } else {
-            ([0.0, -_dim[0] * 0.2 / 3.0], [-_dim[0] * 0.2 / 3.0, 0.0], [0.0, _dim[0] * 0.2 / 3.0])
-        };
-        let (lefz, midz, rigz) = if self.overlay.clone() {
-            (0.0, 1.0, 2.0)
-        } else {
-            (2.0, 1.0, 0.0)
-        };
-        let points = once(left).chain(once(top)).chain(once(right));
-        if (state.frame as f64 / 60.0).floor() == lefz {
-            widget::PointPath::centred(points.clone())
-              //  .w(10.0)
-               // .h(10.0)
-                .align_middle_y_of(state.ids.icon_vec)
-                .right_from(state.ids.icon_vec, 5.0)
-                .set(state.ids.arrow1, ui);
-        } else if (state.frame as f64 / 60.0).floor() == midz {
-            widget::PointPath::centred(points.clone())
-              //  .w(10.0)
-              //  .h(10.0)
-                .align_middle_y_of(state.ids.icon_vec)
-                .right_from(state.ids.arrow1, 5.0)
-                .set(state.ids.arrow2, ui);
-        } else if (state.frame as f64 / 60.0).floor() == rigz {
-            widget::PointPath::centred(points)
-                //.w(20.0)
-              //  .w(10.0)
-              //  .h(10.0)
-                .align_middle_y_of(state.ids.icon_vec)
-                .right_from(state.ids.arrow2, 5.0)
-                .set(state.ids.arrow3, ui);
-        }
 
         state.update(|state| state.frame += 2);
         if state.frame > 180 {

@@ -126,7 +126,8 @@ impl<'b, P, A> Widget for ImagePanels<'b, P, A>
         if let Some(_corner_arrow) = self.corner_arrow {
             while let (Some(item), Some(_panel)) = (items.next(ui), panel_iter.next()) {
                 //let i = item.i;
-                let mut j = item_history::ItemHistory::new(_panel, self.overlay_blowup);
+                let mut j = item_history::ItemHistory::new(_panel, self.overlay_blowup)
+                    .label_color(self.style.label_color(&ui.theme));
 
                 j = j.corner_arrow(_corner_arrow.clone());
 
