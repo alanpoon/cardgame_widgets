@@ -171,7 +171,6 @@ impl<'a> Widget for ListSelect<'a> {
 
         // Now we'll instantiate our label using the **Text** widget.
         if let Some(ref label) = self.maybe_label {
-            println!("there is label");
             let label_color = style.label_color(&ui.theme);
             let font_size = style.label_font_size(&ui.theme);
             let font_id = style.label_font_id(&ui.theme).or(ui.fonts.ids().next());
