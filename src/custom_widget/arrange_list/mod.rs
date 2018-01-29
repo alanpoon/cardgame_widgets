@@ -15,7 +15,7 @@ pub enum ExitBy {
 /// The type upon which we'll implement the `Widget` trait.
 #[derive(WidgetCommon)]
 pub struct ArrangeList<'a, T, W, A>
-    where T: Clone + Send + 'a + Debug,
+    where T: Send + 'a + Debug,
           W: Widget + Arrangeable,
           A: Hoverable
 {
@@ -69,7 +69,7 @@ pub struct State {
 }
 
 impl<'a, T, W, A> ArrangeList<'a, T, W, A>
-    where T: Clone + Send + 'a + Debug,
+    where T: Send + 'a + Debug,
           W: Widget + Arrangeable,
           A: Hoverable
 {
@@ -126,7 +126,7 @@ impl<'a, T, W, A> ArrangeList<'a, T, W, A>
 /// A custom Conrod widget must implement the Widget trait. See the **Widget** trait
 /// documentation for more details.
 impl<'a, T, W, A> Widget for ArrangeList<'a, T, W, A>
-    where T: Clone + Send + 'a + 'static + Debug,
+    where T:  Send + 'a + 'static + Debug,
           W: Widget + Arrangeable,
           A: Hoverable
 {
@@ -350,7 +350,7 @@ impl<'a, T, W, A> Widget for ArrangeList<'a, T, W, A>
     }
 }
 impl<'a, T, W, A> Colorable for ArrangeList<'a, T, W, A>
-    where T: Clone + Send + 'a + 'static + Debug,
+    where T: Send + 'a + 'static + Debug,
           W: Widget + Arrangeable,
           A: Hoverable
 {
