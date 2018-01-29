@@ -26,7 +26,7 @@ pub struct ArrangeList<'a, T, W, A>
     /// See the Style struct below.
     style: Style,
     values: &'a mut Vec<T>,
-    widget_closure: Box<Fn(T) -> W>,
+    widget_closure: Box<Fn(&mut T) -> W>,
     blow_up_closure: Box<Fn(T) -> usize>,
     blow_up: &'a mut Option<usize>,
     show_selected: &'a mut Option<widget::Id>,
@@ -77,7 +77,7 @@ impl<'a, T, W, A> ArrangeList<'a, T, W, A>
     pub fn new(values: &'a mut Vec<T>,
                show_selected: &'a mut Option<widget::Id>,
                blow_up: &'a mut Option<usize>,
-               widget_closure: Box<Fn(T) -> W>,
+               widget_closure: Box<Fn(&mut T) -> W>,
                blow_up_closure: Box<Fn(T) -> usize>,
                item_width: f64)
                -> Self {
@@ -203,8 +203,8 @@ impl<'a, T, W, A> Widget for ArrangeList<'a, T, W, A>
             match event {
                 // For the `Item` events we instantiate the `List`'s items.
                 Event::Item(item) => {
-                    let k_h = self.values.get(item.i).unwrap();
-                    let mut widget = (*self.widget_closure)(k_h.clone());
+                    let k_h = self.values.get_mut(item.i).unwrap();
+                    let mut widget = (*self.widget_closure)(k_h);
                     if let Some(_s) = state.selected {
                         if item.i == _s {
                             widget = widget.selectable();
