@@ -322,6 +322,7 @@ impl<'a, T, W, A> Widget for ArrangeList<'a, T, W, A>
                 .set(state.ids.corner_a, ui);
             if let Some(_s) = state.selected {
                 if let &mut Some(_b) = self.blow_up {
+                    println!("_s:{:?}, len:{:?}",_s.clone(),self.values.len());
                     let k_h = self.values.get(_s).unwrap();
                     let k = (*self.blow_up_closure)(k_h.clone());
                     if _b != k {
