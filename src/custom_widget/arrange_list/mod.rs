@@ -26,7 +26,7 @@ pub struct ArrangeList<'a, T, W, A>
     /// See the Style struct below.
     style: Style,
     values: &'a mut Vec<T>,
-    widget_closure: Box<Fn(&mut T) -> W>,
+    widget_closure: Box<Fn(T) -> W>,
     blow_up_closure: Box<Fn(T) -> usize>,
     blow_up: &'a mut Option<usize>,
     show_selected: &'a mut Option<widget::Id>,
@@ -77,7 +77,7 @@ impl<'a, T, W, A> ArrangeList<'a, T, W, A>
     pub fn new(values: &'a mut Vec<T>,
                show_selected: &'a mut Option<widget::Id>,
                blow_up: &'a mut Option<usize>,
-               widget_closure: Box<Fn(&mut T) -> W>,
+               widget_closure: Box<Fn(T) -> W>,
                blow_up_closure: Box<Fn(T) -> usize>,
                item_width: f64)
                -> Self {
@@ -156,6 +156,7 @@ impl<'a, T, W, A> Widget for ArrangeList<'a, T, W, A>
     fn update(self, args: widget::UpdateArgs<Self>) -> Self::Event {
         let widget::UpdateArgs { id, state, rect, ui, style, .. } = args;
         let arrow_size = self.style.arrow_size(&ui.theme());
+        let values_clone = self.values.clone();
         widget::Rectangle::fill(rect.dim())
             .middle_of(id)
             .graphics_for(id)
@@ -170,19 +171,19 @@ impl<'a, T, W, A> Widget for ArrangeList<'a, T, W, A>
             }
         }
         if let Some(_s) = state.selected {
-            if _s >= self.values.len() {
+            if _s >= values_clone.len() {
                 state.update(|state| {
-                    if self.values.len() == 0 {
+                    if values_clone.len() == 0 {
                         state.selected = None;
                         state.s_widget_id = None;
                     } else {
-                        state.selected = Some(self.values.len() - 1);
+                        state.selected = Some(values_clone.len() - 1);
                     };
                 });
             }
         }
 
-        let (mut events, scrollbar) = widget::ListSelect::single(self.values.len())
+        let (mut events, scrollbar) = widget::ListSelect::single(values_clone.len())
             .flow_right()
             .item_size(self.item_width)
             .scrollbar_thickness(self.style.scrollbar_thickness(&ui.theme))
@@ -203,15 +204,18 @@ impl<'a, T, W, A> Widget for ArrangeList<'a, T, W, A>
             match event {
                 // For the `Item` events we instantiate the `List`'s items.
                 Event::Item(item) => {
-                    let k_h = self.values.get_mut(item.i).unwrap();
-                    let mut widget = (*self.widget_closure)(k_h);
+                    let k_h = self.values.get(item.i).unwrap();
+                    let mut k_h_c = k_h.clone();
+                    let mut widget = (*self.widget_closure)(k_h_c);
                     if let Some(_s) = state.selected {
                         if item.i == _s {
                             widget = widget.selectable();
                             state.update(|state| state.s_widget_id = Some(item.widget_id));
                         }
                     }
-                    item.set(widget, ui);
+                    
+                    let k_h_m = self.values.get_mut(item.i).unwrap();
+                    *k_h_m=item.set_mut(widget, ui);
                 }
                 Event::Selection(selected_id) => {
                     *self.show_selected = Some(id);
@@ -251,13 +255,13 @@ impl<'a, T, W, A> Widget for ArrangeList<'a, T, W, A>
                 .set(state.ids.top_a, ui);
             if let Some(_s) = state.selected {
                 for _c in j {
-                    if self.values.len() > 1 {
+                    if values_clone.len() > 1 {
                         exit_elem = Some(remove_by_index(_s, self.values));
                         state.update(|state| {
                                          state.selected = Some(_s - 1);
                                          state.s_widget_id = None;
                                      });
-                    } else if self.values.len() == 1 {
+                    } else if values_clone.len() == 1 {
                         exit_elem = Some(remove_by_index(_s, self.values));
                         state.update(|state| {
                                          state.selected = None;
@@ -276,8 +280,8 @@ impl<'a, T, W, A> Widget for ArrangeList<'a, T, W, A>
                 .set(state.ids.right_a, ui);
             if let Some(_s) = state.selected {
                 for _c in j {
-                    if _s < self.values.len() - 1 {
-                        rearrange(_s, _s + 1, self.values);
+                    if _s < values_clone.len() - 1 {
+                        rearrange(_s, _s + 1,self.values);
                         state.update(|state| state.selected = Some(_s + 1));
                     } else {
                         state.update(|state| {
@@ -297,14 +301,14 @@ impl<'a, T, W, A> Widget for ArrangeList<'a, T, W, A>
                 .set(state.ids.bottom_a, ui);
             if let Some(_s) = state.selected {
                 for _c in j {
-                    if self.values.len() > 1 {
+                    if values_clone.len() > 1 {
                         exit_elem = Some(remove_by_index(_s, self.values));
                         exit_by = ExitBy::Bottom;
                         state.update(|state| {
                                          state.selected = Some(_s - 1);
                                          state.s_widget_id = None;
                                      });
-                    } else if self.values.len() == 1 {
+                    } else if values_clone.len() == 1 {
                         exit_elem = Some(remove_by_index(_s, self.values));
                         state.update(|state| {
                                          state.selected = None;
@@ -322,8 +326,7 @@ impl<'a, T, W, A> Widget for ArrangeList<'a, T, W, A>
                 .set(state.ids.corner_a, ui);
             if let Some(_s) = state.selected {
                 if let &mut Some(_b) = self.blow_up {
-                    println!("_s:{:?}, len:{:?}",_s.clone(),self.values.len());
-                    let k_h = self.values.get(_s).unwrap();
+                    let k_h = values_clone.get(_s).unwrap();
                     let k = (*self.blow_up_closure)(k_h.clone());
                     if _b != k {
                         *self.blow_up = Some(k);
@@ -331,7 +334,7 @@ impl<'a, T, W, A> Widget for ArrangeList<'a, T, W, A>
                 }
                 for _c in j {
                     if let &mut Some(_b) = self.blow_up {
-                        let k_h = self.values.get(_s).unwrap();
+                        let k_h = values_clone.get(_s).unwrap();
                         let k = (*self.blow_up_closure)(k_h.clone());
                         if _b == k {
                             *self.blow_up = None;
@@ -340,7 +343,7 @@ impl<'a, T, W, A> Widget for ArrangeList<'a, T, W, A>
                         }
 
                     } else {
-                        let k_h = self.values.get(_s).unwrap();
+                        let k_h = values_clone.get(_s).unwrap();
                         let k = (*self.blow_up_closure)(k_h.clone());
                         *self.blow_up = Some(k);
                     }
