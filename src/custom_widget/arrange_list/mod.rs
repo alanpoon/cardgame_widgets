@@ -1,13 +1,18 @@
 use conrod::{self, widget, Positionable, Widget, Colorable, Sizeable, Color};
+use conrod::widget::list::{Right,Fixed};
+use conrod::UiCell;
 use std::fmt::Debug;
 use std::marker::Send;
 pub use custom_widget::image_hover::{Hoverable, ImageHover, TimesClicked};
 pub mod item;
+
 pub use custom_widget::arrange_list::item::ItemWidget;
 pub trait Arrangeable {
     fn selectable(self) -> Self;
 }
-
+pub trait WidgetMut<T>{
+    fn set_mut<'a,'b>(self,widget::list::Item<Right,Fixed>,&'a mut UiCell<'b>)->T;
+}
 pub enum ExitBy {
     Top,
     Bottom,
@@ -16,7 +21,7 @@ pub enum ExitBy {
 #[derive(WidgetCommon)]
 pub struct ArrangeList<'a, T, W, A>
     where T: Clone + Send + 'a + Debug,
-          W: Widget + Arrangeable,
+          W: WidgetMut<T> + Arrangeable,
           A: Hoverable
 {
     /// An object that handles some of the dirty work of rendering a GUI. We don't
@@ -70,7 +75,7 @@ pub struct State {
 
 impl<'a, T, W, A> ArrangeList<'a, T, W, A>
     where T: Clone + Send + 'a + Debug,
-          W: Widget + Arrangeable,
+          W: WidgetMut<T> + Arrangeable,
           A: Hoverable
 {
     /// Create a button context to be built upon.
@@ -127,7 +132,7 @@ impl<'a, T, W, A> ArrangeList<'a, T, W, A>
 /// documentation for more details.
 impl<'a, T, W, A> Widget for ArrangeList<'a, T, W, A>
     where T: Clone + Send + 'a + 'static + Debug,
-          W: Widget + Arrangeable,
+          W: WidgetMut<T> + Arrangeable,
           A: Hoverable
 {
     /// The State struct that we defined above.
@@ -204,8 +209,7 @@ impl<'a, T, W, A> Widget for ArrangeList<'a, T, W, A>
             match event {
                 // For the `Item` events we instantiate the `List`'s items.
                 Event::Item(item) => {
-                    let k_h = self.values.get(item.i).unwrap();
-                    let mut k_h_c = k_h.clone();
+                    let  k_h_c= self.values.get(item.i).unwrap().clone();
                     let mut widget = (*self.widget_closure)(k_h_c);
                     if let Some(_s) = state.selected {
                         if item.i == _s {
@@ -215,7 +219,8 @@ impl<'a, T, W, A> Widget for ArrangeList<'a, T, W, A>
                     }
                     
                     let k_h_m = self.values.get_mut(item.i).unwrap();
-                    *k_h_m=item.set_mut(widget, ui);
+                    //*k_h_m=item.set(widget, ui);
+                    *k_h_m = widget.set_mut(item,ui);
                 }
                 Event::Selection(selected_id) => {
                     *self.show_selected = Some(id);
@@ -355,7 +360,7 @@ impl<'a, T, W, A> Widget for ArrangeList<'a, T, W, A>
 }
 impl<'a, T, W, A> Colorable for ArrangeList<'a, T, W, A>
     where T: Clone + Send + 'a + 'static + Debug,
-          W: Widget + Arrangeable,
+          W: WidgetMut<T> + Arrangeable,
           A: Hoverable
 {
     builder_method!(color { style.color = Some(Color) });
