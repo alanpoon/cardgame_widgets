@@ -31,8 +31,8 @@ pub struct ArrangeList<'a, T, W, A>
     /// See the Style struct below.
     style: Style,
     values: &'a mut Vec<T>,
-    widget_closure: Box<Fn(T) -> W>,
-    blow_up_closure: Box<Fn(T) -> usize>,
+    widget_closure: Box<'a+Fn(T) -> W>,
+    blow_up_closure: Box<'a+Fn(T) -> usize>,
     blow_up: &'a mut Option<usize>,
     show_selected: &'a mut Option<widget::Id>,
     item_width: f64,
