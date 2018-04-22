@@ -41,7 +41,7 @@ pub struct ArrangeList<'a, T, W, A>
     right_arrow: Option<A>,
     bottom_arrow: Option<A>,
     corner_arrow: Option<A>,
-    keypad_bool:Option<bool>
+    keypad_bool:bool
 }
 
 #[derive(Copy, Clone, Debug, Default, PartialEq, WidgetStyle)]
@@ -101,7 +101,7 @@ impl<'a, T, W, A> ArrangeList<'a, T, W, A>
             right_arrow: None,
             bottom_arrow: None,
             corner_arrow: None,
-            keypad_bool:None
+            keypad_bool:false
         }
     }
     builder_methods!{
@@ -128,8 +128,8 @@ impl<'a, T, W, A> ArrangeList<'a, T, W, A>
         self.corner_arrow = Some(_h);
         self
     }
-    pub fn keypad_bool(mut self,_h:Option<bool>)-> Self{
-        self.keypad_bool = Some(_h);
+    pub fn keypad_bool(mut self,_h:bool)-> Self{
+        self.keypad_bool = _h;
         self
     }
 }
