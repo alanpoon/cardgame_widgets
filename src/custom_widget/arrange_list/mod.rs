@@ -11,7 +11,7 @@ pub trait Arrangeable {
     fn selectable(self) -> Self;
 }
 pub trait WidgetMut<T>{
-    fn set_mut<'a,'b>(self,widget::list::Item<Right,Fixed>,&'a mut UiCell<'b>)->T;
+    fn set_mut<'a,'b>(self,widget::list::Item<Right,Fixed>,&'a mut UiCell<'b>)->(T,bool);
 }
 pub enum ExitBy {
     Top,
@@ -138,7 +138,7 @@ impl<'a, T, W, A> ArrangeList<'a, T, W, A>
 /// documentation for more details.
 impl<'a, T, W, A> Widget for ArrangeList<'a, T, W, A>
     where T: Clone + Send + 'a + 'static + Debug,
-          W: WidgetMut<(T,bool)> + Arrangeable,
+          W: WidgetMut<T> + Arrangeable,
           A: Hoverable
 {
     /// The State struct that we defined above.
