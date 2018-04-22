@@ -148,7 +148,7 @@ impl<'a, T, W, A> Widget for ArrangeList<'a, T, W, A>
     /// The event produced by instantiating the widget.
     ///
     /// `Some` when an element exited, otherwise `None`.,Selected_index
-    type Event = (Option<T>, ExitBy, Option<widget::list::Scrollbar<widget::scroll::X>>);
+    type Event = (Option<T>, ExitBy, Option<widget::list::Scrollbar<widget::scroll::X>>,bool);
 
     fn init_state(&self, id_gen: widget::id::Generator) -> Self::State {
         State {
