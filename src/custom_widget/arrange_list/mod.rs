@@ -128,7 +128,7 @@ impl<'a, T, W, A> ArrangeList<'a, T, W, A>
         self.corner_arrow = Some(_h);
         self
     }
-    pub fn keypad_bool(mut self,_h:Option(bool))-> Self{
+    pub fn keypad_bool(mut self,_h:Option<bool>)-> Self{
         self.keypad_bool = Some(_h);
         self
     }
