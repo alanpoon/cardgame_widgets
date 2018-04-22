@@ -31,7 +31,7 @@ pub struct ArrangeList<'a, T, W, A>
     /// See the Style struct below.
     style: Style,
     values: &'a mut Vec<T>,
-    widget_closure: Box<'a + Fn(T,&mut bool) -> W>,
+    widget_closure: Box<'a + Fn(T) -> W>,
     blow_up_closure: Box<'a + Fn(T) -> usize>,
     blow_up: &'a mut Option<usize>,
     show_selected: &'a mut Option<widget::Id>,
@@ -40,8 +40,7 @@ pub struct ArrangeList<'a, T, W, A>
     top_arrow: Option<A>,
     right_arrow: Option<A>,
     bottom_arrow: Option<A>,
-    corner_arrow: Option<A>,
-    keypad_bool:bool
+    corner_arrow: Option<A>
 }
 
 #[derive(Copy, Clone, Debug, Default, PartialEq, WidgetStyle)]
@@ -83,7 +82,7 @@ impl<'a, T, W, A> ArrangeList<'a, T, W, A>
     pub fn new(values: &'a mut Vec<T>,
                show_selected: &'a mut Option<widget::Id>,
                blow_up: &'a mut Option<usize>,
-               widget_closure: Box<'a+Fn(T,&mut bool) -> W>,
+               widget_closure: Box<'a+Fn(T) -> W>,
                blow_up_closure: Box<'a+Fn(T) -> usize>,
                item_width: f64)
                -> Self {
@@ -100,8 +99,7 @@ impl<'a, T, W, A> ArrangeList<'a, T, W, A>
             top_arrow: None,
             right_arrow: None,
             bottom_arrow: None,
-            corner_arrow: None,
-            keypad_bool:false
+            corner_arrow: None
         }
     }
     builder_methods!{
@@ -126,10 +124,6 @@ impl<'a, T, W, A> ArrangeList<'a, T, W, A>
     }
     pub fn corner_arrow(mut self, _h: A) -> Self {
         self.corner_arrow = Some(_h);
-        self
-    }
-    pub fn keypad_bool(mut self,_h:bool)-> Self{
-        self.keypad_bool = _h;
         self
     }
 }
@@ -193,7 +187,6 @@ impl<'a, T, W, A> Widget for ArrangeList<'a, T, W, A>
                 });
             }
         }
-        let mut keypad_bools = vec![self.keypad_bool;values_clone.len()];
         let (mut events, scrollbar) = widget::ListSelect::single(values_clone.len())
             .flow_right()
             .item_size(self.item_width)
@@ -216,8 +209,7 @@ impl<'a, T, W, A> Widget for ArrangeList<'a, T, W, A>
                 // For the `Item` events we instantiate the `List`'s items.
                 Event::Item(item) => {
                     let k_h_c= self.values.get(item.i).unwrap().clone();
-                    let keypad_bool_ind = keypad_bools.get_mut(item.i).unwrap();
-                    let mut widget = (*self.widget_closure)(k_h_c,keypad_bool_ind);
+                    let mut widget = (*self.widget_closure)(k_h_c);
                     if let Some(_s) = state.selected {
                         if item.i == _s {
                             widget = widget.selectable();
@@ -360,13 +352,7 @@ impl<'a, T, W, A> Widget for ArrangeList<'a, T, W, A>
                 }
             }
         }
-        let mut keypad_bool_new=false;
-        let collect:Vec<bool> = keypad_bools.iter().filter(|x|{**x}).map(|x|x.clone()).collect();
-        let keypad_true_len:usize =collect.len();
-        if (keypad_true_len>0){
-            keypad_bool_new=true;
-        }
-        (exit_elem, exit_by, scrollbar,keypad_bool_new)
+        (exit_elem, exit_by, scrollbar)
     }
 }
 impl<'a, T, W, A> Colorable for ArrangeList<'a, T, W, A>
