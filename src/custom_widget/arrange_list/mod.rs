@@ -361,7 +361,7 @@ impl<'a, T, W, A> Widget for ArrangeList<'a, T, W, A>
             }
         }
         let keypad_bool_new=false;
-        let keypad_true_len = keypad_bools.iter().filter(|x|{**x}).collect().len();
+        let keypad_true_len:usize = keypad_bools.iter().filter(|x|{**x}).collect().len();
         if (keypad_true_len>0){
             keypad_bool_new=true;
         }
