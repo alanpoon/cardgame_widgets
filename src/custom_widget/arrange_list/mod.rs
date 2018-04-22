@@ -31,7 +31,7 @@ pub struct ArrangeList<'a, T, W, A>
     /// See the Style struct below.
     style: Style,
     values: &'a mut Vec<T>,
-    widget_closure: Box<'a + Fn(T,&mut bool) -> W>,
+    widget_closure: Box<'a + Fn(T,bool) -> W>,
     blow_up_closure: Box<'a + Fn(T) -> usize>,
     blow_up: &'a mut Option<usize>,
     show_selected: &'a mut Option<widget::Id>,
@@ -83,7 +83,7 @@ impl<'a, T, W, A> ArrangeList<'a, T, W, A>
     pub fn new(values: &'a mut Vec<T>,
                show_selected: &'a mut Option<widget::Id>,
                blow_up: &'a mut Option<usize>,
-               widget_closure: Box<'a+Fn(T,&mut bool) -> W>,
+               widget_closure: Box<'a+Fn(T,bool) -> W>,
                blow_up_closure: Box<'a+Fn(T) -> usize>,
                item_width: f64)
                -> Self {
@@ -216,7 +216,7 @@ impl<'a, T, W, A> Widget for ArrangeList<'a, T, W, A>
                 // For the `Item` events we instantiate the `List`'s items.
                 Event::Item(item) => {
                     let k_h_c= self.values.get(item.i).unwrap().clone();
-                    let keypad_bool_ind = keypad_bools.get_mut(item.i).unwrap();
+                    let keypad_bool_ind = keypad_bools.get(item.i).unwrap().clone();
                     let mut widget = (*self.widget_closure)(k_h_c,keypad_bool_ind);
                     if let Some(_s) = state.selected {
                         if item.i == _s {
@@ -225,7 +225,10 @@ impl<'a, T, W, A> Widget for ArrangeList<'a, T, W, A>
                         }
                     }                    
                     let k_h_m = self.values.get_mut(item.i).unwrap();
-                    *k_h_m = widget.set_mut(item,ui);
+                    let (a,b) = widget.set_mut(item,ui);
+                    *k_h_m = a;
+                    let keypad_bool_mut = keypad_bools.get_mut(item.i).unwrap();
+                    *keypad_bool_mut=b;
                 }
                 Event::Selection(selected_id) => {
                     *self.show_selected = Some(id);
