@@ -193,7 +193,7 @@ impl<'a, T, W, A> Widget for ArrangeList<'a, T, W, A>
                 });
             }
         }
-        let keypad_bools = vec![self.keypad_bool;values_clone.len()];
+        let mut keypad_bools = vec![self.keypad_bool;values_clone.len()];
         let (mut events, scrollbar) = widget::ListSelect::single(values_clone.len())
             .flow_right()
             .item_size(self.item_width)
@@ -360,7 +360,7 @@ impl<'a, T, W, A> Widget for ArrangeList<'a, T, W, A>
                 }
             }
         }
-        let keypad_bool_new=false;
+        let mut keypad_bool_new=false;
         let collect:Vec<bool> = keypad_bools.iter().filter(|x|{**x}).map(|x|x.clone()).collect();
         let keypad_true_len:usize =collect.len();
         if (keypad_true_len>0){
