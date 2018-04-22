@@ -4,8 +4,8 @@ version = "0.1.0"
 authors = ["alanpoon"]
 
 [dependencies]
-conrod = { git ="https://github.com/alanpoon/conrod.git", branch="update_syn_old", features = ["glium","winit"]}
-conrod_derive = {git ="https://github.com/alanpoon/conrod.git", branch="update_syn_old"}
+conrod = { git ="https://github.com/PistonDevelopers/conrod.git", branch="master", features = ["glium","winit"]}
+conrod_derive = {git ="https://github.com/PistonDevelopers/conrod.git", branch="master"}
 
 [dev-dependencies]
 image = "0.15.0"
