@@ -138,7 +138,7 @@ impl<'a, T, W, A> ArrangeList<'a, T, W, A>
 /// documentation for more details.
 impl<'a, T, W, A> Widget for ArrangeList<'a, T, W, A>
     where T: Clone + Send + 'a + 'static + Debug,
-          W: WidgetMut<T> + Arrangeable,
+          W: WidgetMut<(T,bool)> + Arrangeable,
           A: Hoverable
 {
     /// The State struct that we defined above.
