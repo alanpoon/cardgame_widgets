@@ -1,12 +1,12 @@
 //! The `Canvas` widget and related items.
 
-use conrod::{Color, Colorable, FontSize, Borderable, Labelable, Positionable, Sizeable, Theme, Ui,
+use conrod_core::{Color, Colorable, FontSize, Borderable, Labelable, Positionable, Sizeable, Theme, Ui,
              UiCell, Widget, image, color};
-use conrod::position::{self, Dimensions, Padding, Place, Position, Range, Rect, Scalar};
-use conrod::position::Direction::{Forwards, Backwards};
-use conrod::text;
-use conrod::widget;
-use conrod::widget::primitive::image::Image;
+use conrod_core::position::{self, Dimensions, Padding, Place, Position, Range, Rect, Scalar};
+use conrod_core::position::Direction::{Forwards, Backwards};
+use conrod_core::text;
+use conrod_core::widget;
+use conrod_core::widget::primitive::image::Image;
 use custom_widget::image_hover::{ImageHover, Hoverable};
 pub struct ImageHoverStruct(Image, Option<Image>, Option<Image>);
 impl Hoverable for ImageHoverStruct {

@@ -1,5 +1,5 @@
-use conrod::{self, widget, Positionable, Widget, Sizeable};
-use conrod::widget::primitive::image::Image;
+use conrod_core::{self, widget, Positionable, Widget, Sizeable};
+use conrod_core::widget::primitive::image::Image;
 pub trait Hoverable {
     fn idle(&self) -> Image;
     fn hover(&self) -> Option<Image>;
@@ -120,7 +120,7 @@ enum Interaction {
 }
 
 fn interaction_and_times_triggered(button_id: widget::Id,
-                                   ui: &conrod::UiCell)
+                                   ui: &conrod_core::UiCell)
                                    -> (Interaction, u16) {
     let input = ui.widget_input(button_id);
     let interaction = input.mouse().map_or(Interaction::Idle,

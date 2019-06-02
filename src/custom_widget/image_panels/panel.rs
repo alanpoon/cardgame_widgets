@@ -1,4 +1,4 @@
-use conrod::{self, widget, Positionable, Widget, Sizeable, color, Scalar, Color, FontSize};
+use conrod_core::{self, widget, Positionable, Widget, Sizeable, color, Scalar, Color, FontSize};
 use custom_widget::image_panels::{item_history, Panelable};
 use custom_widget::image_hover::Hoverable;
 use std;
@@ -24,7 +24,7 @@ pub struct ImagePanels<'b, P, A>
 pub struct Style {
     /// Border the row of images
     #[conrod(default="(color::BLUE,[200.0,30.0,2.0])")]
-    pub item_rect: Option<(conrod::Color, [f64; 3])>, //w,h, pad bottom
+    pub item_rect: Option<(conrod_core::Color, [f64; 3])>, //w,h, pad bottom
     /// Weight, height of the display pic, left top from corner
     #[conrod(default="[20.0,20.0,10.0,10.0]")]
     pub display_pic: Option<[f64; 4]>, // w,h,l,t
@@ -77,7 +77,7 @@ impl<'b, P, A> ImagePanels<'b, P, A>
         self
     }
     builder_methods!{
-        pub item_rect { style.item_rect = Some((conrod::Color,[f64;3])) }
+        pub item_rect { style.item_rect = Some((conrod_core::Color,[f64;3])) }
         pub display_pic { style.display_pic = Some([f64;4]) }
         pub x_item_list { style.x_item_list = Some([f64;4]) }
         pub y_item_height {style.y_item_height = Some(f64)}

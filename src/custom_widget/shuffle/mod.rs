@@ -1,5 +1,5 @@
-use conrod::{widget, Positionable, Widget, Sizeable, UiCell};
-use conrod::widget::primitive::image::Image;
+use conrod_core::{widget, Positionable, Widget, Sizeable, UiCell};
+use conrod_core::widget::primitive::image::Image;
 use std::fmt::Debug;
 use std::marker::Send;
 #[derive(WidgetCommon)]

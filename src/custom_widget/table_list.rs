@@ -1,4 +1,4 @@
-use conrod::{self, widget, Positionable, Widget, Sizeable, Labelable, Colorable};
+use conrod_core::{self, widget, Positionable, Widget, Sizeable, Labelable, Colorable};
 use custom_widget::pad_text_button;
 
 pub trait TableListTexts {
@@ -31,7 +31,7 @@ pub struct TableList<'a, T: TableListTexts + 'a> {
 #[derive(Copy, Clone, Debug, Default, PartialEq, WidgetStyle)]
 pub struct Style {
     #[conrod(default = "theme.label_color")]
-    pub label_color: Option<conrod::Color>,
+    pub label_color: Option<conrod_core::Color>,
 }
 
 widget_ids! {
@@ -80,7 +80,7 @@ impl<'a, T> TableList<'a, T>
     }
 
     builder_methods!{
-        pub label_color { style.label_color = Some(conrod::Color) }
+        pub label_color { style.label_color = Some(conrod_core::Color) }
     }
 }
 

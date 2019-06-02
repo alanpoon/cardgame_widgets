@@ -1,7 +1,7 @@
 //! A wrapper around the `List` widget providing the ability to select one or more items.
 
-use conrod::{Color, Positionable, Scalar, Sizeable, Ui, Widget};
-use conrod::{event, graph, input, widget};
+use conrod_core::{Color, Positionable, Scalar, Sizeable, Ui, Widget};
+use conrod_core::{event, graph, input, widget};
 use std;
 
 /// A wrapper around the `List` widget that handles single and multiple selection logic.

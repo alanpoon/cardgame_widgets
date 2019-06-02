@@ -1,6 +1,6 @@
-use conrod::{self, widget, Positionable, Widget, Colorable, Sizeable, Color};
-use conrod::widget::list::{Right,Fixed};
-use conrod::UiCell;
+use conrod_core::{self, widget, Positionable, Widget, Colorable, Sizeable, Color};
+use conrod_core::widget::list::{Right,Fixed};
+use conrod_core::UiCell;
 use std::fmt::Debug;
 use std::marker::Send;
 pub use custom_widget::image_hover::{Hoverable, ImageHover, TimesClicked};
@@ -47,7 +47,7 @@ pub struct ArrangeList<'a, T, W, A>
 #[derive(Copy, Clone, Debug, Default, PartialEq, WidgetStyle)]
 pub struct Style {
     #[conrod(default = "theme.shape_color")]
-    pub color: Option<conrod::Color>,
+    pub color: Option<conrod_core::Color>,
     #[conrod(default = "40.0")]
     pub arrow_size: Option<f64>,
     #[conrod(default="10.0")]
@@ -211,7 +211,7 @@ impl<'a, T, W, A> Widget for ArrangeList<'a, T, W, A>
             }
             y
         }) {
-            use conrod::widget::list_select::Event;
+            use conrod_core::widget::list_select::Event;
             match event {
                 // For the `Item` events we instantiate the `List`'s items.
                 Event::Item(item) => {

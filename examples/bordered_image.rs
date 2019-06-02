@@ -6,9 +6,9 @@ extern crate cardgame_widgets;
 extern crate find_folder;
 extern crate image;
 pub mod support;
-use conrod::{widget, color, Colorable, Widget, Positionable, Sizeable, Rect};
-use conrod::backend::glium::glium::{self, glutin, Surface};
-use conrod::event;
+use conrod_core::{widget, color, Colorable, Widget, Positionable, Sizeable, Rect};
+use conrod_core::backend::glium::glium::{self, glutin, Surface};
+use conrod_core::event;
 use cardgame_widgets::custom_widget::bordered_image::BorderedImage;
 use std::time::Instant;
 
@@ -21,7 +21,7 @@ widget_ids! {
 pub struct App {}
 #[derive(Clone)]
 pub enum ConrodMessage {
-    Event(Instant, conrod::event::Input),
+    Event(Instant, conrod_core::event::Input),
     Thread(Instant),
 }
 fn main() {
@@ -31,16 +31,16 @@ fn main() {
             .with_gl(glium::glutin::GlRequest::Specific(glium::glutin::Api::OpenGlEs, (3, 0)));
     let mut events_loop = glutin::EventsLoop::new();
     let display = glium::Display::new(window, context, &events_loop).unwrap();
-    let mut renderer = conrod::backend::glium::Renderer::new(&display).unwrap();
+    let mut renderer = conrod_core::backend::glium::Renderer::new(&display).unwrap();
     // construct our `Ui`.
     let (screen_w, screen_h) = display.get_framebuffer_dimensions();
-    let mut ui = conrod::UiBuilder::new([screen_w as f64, screen_h as f64]).build();
+    let mut ui = conrod_core::UiBuilder::new([screen_w as f64, screen_h as f64]).build();
 
     let rust_logo = load_image(&display, "images/rust.png");
     let events_loop_proxy = events_loop.create_proxy();
     let mut ids = Ids::new(ui.widget_id_generator());
     let mut last_update = std::time::Instant::now();
-    let mut image_map: conrod::image::Map<glium::texture::Texture2d> = conrod::image::Map::new();
+    let mut image_map: conrod_core::image::Map<glium::texture::Texture2d> = conrod_core::image::Map::new();
     let rust_logo = image_map.insert(rust_logo);
     let mut old_captured_event: Option<ConrodMessage> = None;
     let mut captured_event: Option<ConrodMessage> = None;
@@ -67,7 +67,7 @@ fn main() {
                 }
                 _ => {}
             }
-            let input = match conrod::backend::winit::convert_event(event.clone(), &display) {
+            let input = match conrod_core::backend::winit::convert_event(event.clone(), &display) {
                 None => {
                     to_continue = true;
                 }
@@ -130,10 +130,10 @@ fn main() {
     }
 }
 
-fn set_widgets(ui: &mut conrod::UiCell,
+fn set_widgets(ui: &mut conrod_core::UiCell,
                ids: &mut Ids,
                _app: &mut App,
-               rust_logo: conrod::image::Id) {
+               rust_logo: conrod_core::image::Id) {
     widget::Canvas::new().color(color::LIGHT_BLUE).set(ids.master, ui);
     let item_h = 260.0;
     let (mut items, scrollbar) = widget::List::flow_right(9)

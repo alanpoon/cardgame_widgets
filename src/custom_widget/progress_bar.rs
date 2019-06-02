@@ -1,6 +1,6 @@
-use conrod::{widget, Positionable, Widget, Scalar, FontSize, text, Color, Labelable, Colorable,
+use conrod_core::{widget, Positionable, Widget, Scalar, FontSize, text, Color, Labelable, Colorable,
              color};
-use conrod::widget::primitive::line;
+use conrod_core::widget::primitive::line;
 /// The type upon which we'll implement the `Widget` trait.
 #[derive(WidgetCommon)]
 pub struct ProgressBar<'a> {

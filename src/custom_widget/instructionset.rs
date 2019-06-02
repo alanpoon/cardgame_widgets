@@ -1,7 +1,7 @@
-use conrod::{self, widget, Positionable, Widget, Labelable, Colorable, Sizeable};
-use conrod::widget::{Rectangle, Oval};
-use conrod::widget::primitive::shape::oval::Full;
-use conrod::widget::button::{Button, Flat};
+use conrod_core::{self, widget, Positionable, Widget, Labelable, Colorable, Sizeable};
+use conrod_core::widget::{Rectangle, Oval};
+use conrod_core::widget::primitive::shape::oval::Full;
+use conrod_core::widget::button::{Button, Flat};
 pub trait Instructable<'a> {
     fn label(&self) -> &'a str;
     fn rect(&self, [f64; 2]) -> Rectangle;
@@ -29,15 +29,15 @@ pub struct InstructionSet<'a, I>
 pub struct Style {
     /// Color of the button's label.
     #[conrod(default = "theme.shape_color")]
-    pub button_color: Option<conrod::Color>,
+    pub button_color: Option<conrod_core::Color>,
     #[conrod(default = "theme.label_color")]
-    pub label_color: Option<conrod::Color>,
+    pub label_color: Option<conrod_core::Color>,
     /// Font size of the button's label.
     #[conrod(default = "theme.font_size_medium")]
-    pub label_font_size: Option<conrod::FontSize>,
+    pub label_font_size: Option<conrod_core::FontSize>,
     /// Specify a unique font for the label.
     #[conrod(default = "theme.font_id")]
-    pub label_font_id: Option<Option<conrod::text::font::Id>>,
+    pub label_font_id: Option<Option<conrod_core::text::font::Id>>,
     /// Specify a parent_id
     #[conrod(default="None")]
     pub parent_id: Option<Option<widget::Id>>,
@@ -73,7 +73,7 @@ impl<'a, I> InstructionSet<'a, I>
     }
 
     /// Specify the font used for displaying the label.
-    pub fn label_font_id(mut self, font_id: conrod::text::font::Id) -> Self {
+    pub fn label_font_id(mut self, font_id: conrod_core::text::font::Id) -> Self {
         self.style.label_font_id = Some(Some(font_id));
         self
     }
@@ -82,9 +82,9 @@ impl<'a, I> InstructionSet<'a, I>
         self
     }
     builder_methods!{
-        pub button_color { style.button_color = Some(conrod::Color) }
-        pub label_color{style.label_color = Some(conrod::Color)}
-        pub label_font_size{style.label_font_size = Some(conrod::FontSize)}
+        pub button_color { style.button_color = Some(conrod_core::Color) }
+        pub label_color{style.label_color = Some(conrod_core::Color)}
+        pub label_font_size{style.label_font_size = Some(conrod_core::FontSize)}
     }
 }
 

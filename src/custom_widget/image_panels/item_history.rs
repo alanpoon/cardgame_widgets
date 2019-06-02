@@ -1,4 +1,4 @@
-use conrod::{widget, Positionable, Widget, Sizeable, color, Rect, Scalar, Color, Colorable,
+use conrod_core::{widget, Positionable, Widget, Sizeable, color, Rect, Scalar, Color, Colorable,
              FontSize, Borderable};
 use std;
 pub use custom_widget::image_hover::{Hoverable, ImageHover};

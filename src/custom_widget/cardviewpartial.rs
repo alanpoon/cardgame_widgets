@@ -1,4 +1,4 @@
-use conrod::{self, widget, Positionable, Widget, image, Sizeable, Rect};
+use conrod_core::{self, widget, Positionable, Widget, image, Sizeable, Rect};
 use sprite::{spriteable_rect, Spriteable};
 
 /// The type upon which we'll implement the `Widget` trait.
@@ -23,15 +23,15 @@ pub struct CardViewPartial<'a, H>
 pub struct Style {
     /// Color of the button's label.
     #[conrod(default = "theme.shape_color")]
-    pub color: Option<conrod::Color>,
+    pub color: Option<conrod_core::Color>,
     #[conrod(default = "theme.label_color")]
-    pub label_color: Option<conrod::Color>,
+    pub label_color: Option<conrod_core::Color>,
     /// Font size of the button's label.
     #[conrod(default = "theme.font_size_medium")]
-    pub label_font_size: Option<conrod::FontSize>,
+    pub label_font_size: Option<conrod_core::FontSize>,
     /// Specify a unique font for the label.
     #[conrod(default = "theme.font_id")]
-    pub label_font_id: Option<Option<conrod::text::font::Id>>,
+    pub label_font_id: Option<Option<conrod_core::text::font::Id>>,
 }
 
 widget_ids! {
@@ -67,7 +67,7 @@ impl<'a, H> CardViewPartial<'a, H>
     }
 
     /// Specify the font used for displaying the label.
-    pub fn label_font_id(mut self, font_id: conrod::text::font::Id) -> Self {
+    pub fn label_font_id(mut self, font_id: conrod_core::text::font::Id) -> Self {
         self.style.label_font_id = Some(Some(font_id));
         self
     }
@@ -133,7 +133,7 @@ enum Interaction {
 }
 
 fn interaction_and_times_triggered(button_id: widget::Id,
-                                   ui: &conrod::UiCell)
+                                   ui: &conrod_core::UiCell)
                                    -> (Interaction, u16) {
     let input = ui.widget_input(button_id);
     let interaction = input.mouse().map_or(Interaction::Idle,

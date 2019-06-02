@@ -1,7 +1,7 @@
-use conrod::{self, widget, Positionable, Widget, Ui, UiCell, graph};
+use conrod_core::{self, widget, Positionable, Widget, Ui, UiCell, graph};
 
 use std;
-use conrod::position::Scalar;
+use conrod_core::position::Scalar;
 /// The type upon which we'll implement the `Widget` trait.
 #[derive(WidgetCommon)]
 pub struct WrapList {
@@ -18,15 +18,15 @@ pub struct WrapList {
 pub struct Style {
     /// Color of the button's label.
     #[conrod(default = "theme.shape_color")]
-    pub color: Option<conrod::Color>,
+    pub color: Option<conrod_core::Color>,
     #[conrod(default = "theme.label_color")]
-    pub label_color: Option<conrod::Color>,
+    pub label_color: Option<conrod_core::Color>,
     /// Font size of the button's label.
     #[conrod(default = "theme.font_size_medium")]
-    pub label_font_size: Option<conrod::FontSize>,
+    pub label_font_size: Option<conrod_core::FontSize>,
     /// Specify a unique font for the label.
     #[conrod(default = "theme.font_id")]
-    pub label_font_id: Option<Option<conrod::text::font::Id>>,
+    pub label_font_id: Option<Option<conrod_core::text::font::Id>>,
 }
 
 widget_ids! {
@@ -180,7 +180,7 @@ impl WrapList {
     }
 
     /// Specify the font used for displaying the label.
-    pub fn label_font_id(mut self, font_id: conrod::text::font::Id) -> Self {
+    pub fn label_font_id(mut self, font_id: conrod_core::text::font::Id) -> Self {
         self.style.label_font_id = Some(Some(font_id));
         self
     }

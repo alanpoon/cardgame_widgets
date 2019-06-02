@@ -1,4 +1,4 @@
-use conrod::{widget, Positionable, Widget, Color, Colorable, Sizeable};
+use conrod_core::{widget, Positionable, Widget, Color, Colorable, Sizeable};
 use text::get_font_size_hn;
 use std::time::Duration;
 use std::time::Instant;

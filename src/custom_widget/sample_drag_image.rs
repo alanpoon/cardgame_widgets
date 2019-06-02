@@ -1,9 +1,9 @@
 //! The `Button` widget and related items.
 
-use conrod::{Color, Colorable, Borderable, Positionable, UiCell, Widget, event, input, image, Theme,
+use conrod_core::{Color, Colorable, Borderable, Positionable, UiCell, Widget, event, input, image, Theme,
              Sizeable};
-use conrod::position::{Rect, Scalar, Dimensions, Point};
-use conrod::widget;
+use conrod_core::position::{Rect, Scalar, Dimensions, Point};
+use conrod_core::widget;
 use custom_widget::dragdrop_list::Draggable;
 pub use sprite::{Spriteable, spriteable_rect};
 /// The `Button` displays an `Image` on top.

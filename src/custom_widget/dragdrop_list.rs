@@ -1,6 +1,6 @@
-use conrod::{self, widget, Positionable, Widget, Ui, UiCell, Colorable};
+use conrod_core::{self, widget, Positionable, Widget, Ui, UiCell, Colorable};
 use std;
-use conrod::position::Scalar;
+use conrod_core::position::Scalar;
 use std::fmt::Debug;
 use std::marker::Send;
 pub trait Draggable {
@@ -26,7 +26,7 @@ pub struct DragDropList<'a, T, W>
 #[derive(Copy, Clone, Debug, Default, PartialEq, WidgetStyle)]
 pub struct Style {
     #[conrod(default = "theme.shape_color")]
-    pub color: Option<conrod::Color>,
+    pub color: Option<conrod_core::Color>,
     #[conrod(default="None")]
     pub exit_id: Option<Option<widget::Id>>,
 }
@@ -43,7 +43,7 @@ pub struct State<T> {
     ids: Ids,
     temp: Vec<(Option<widget::Id>, T)>,
     last_release: Option<std::time::Instant>,
-    mouse_point: Option<(usize, conrod::position::Point)>,
+    mouse_point: Option<(usize, conrod_core::position::Point)>,
 }
 /// The data necessary for instantiating a single item within a `List`.
 #[derive( Debug)]
@@ -362,7 +362,7 @@ impl<'a, T, W> Colorable for DragDropList<'a, T, W>
     where T: Clone + Send + 'a + 'static + Debug,
           W: Widget + Draggable
 {
-    fn color(mut self, color: conrod::Color) -> Self {
+    fn color(mut self, color: conrod_core::Color) -> Self {
         self.style.color = Some(color);
         self
     }

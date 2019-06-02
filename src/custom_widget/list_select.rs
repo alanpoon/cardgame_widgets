@@ -1,4 +1,4 @@
-use conrod::{self, widget, Colorable, Labelable, Positionable, Widget, image, Sizeable, Rect};
+use conrod_core::{self, widget, Colorable, Labelable, Positionable, Widget, image, Sizeable, Rect};
 
 /// The type upon which we'll implement the `Widget` trait.
 #[derive(WidgetCommon)]
@@ -21,15 +21,15 @@ pub struct ListSelect<'a> {
 pub struct Style {
     /// Color of the button's label.
     #[conrod(default = "theme.shape_color")]
-    pub color: Option<conrod::Color>,
+    pub color: Option<conrod_core::Color>,
     #[conrod(default = "theme.label_color")]
-    pub label_color: Option<conrod::Color>,
+    pub label_color: Option<conrod_core::Color>,
     /// Font size of the button's label.
     #[conrod(default = "theme.font_size_medium")]
-    pub label_font_size: Option<conrod::FontSize>,
+    pub label_font_size: Option<conrod_core::FontSize>,
     /// Specify a unique font for the label.
     #[conrod(default = "theme.font_id")]
-    pub label_font_id: Option<Option<conrod::text::font::Id>>,
+    pub label_font_id: Option<Option<conrod_core::text::font::Id>>,
 }
 
 widget_ids! {
@@ -67,7 +67,7 @@ impl<'a> ListSelect<'a> {
     }
 
     /// Specify the font used for displaying the label.
-    pub fn label_font_id(mut self, font_id: conrod::text::font::Id) -> Self {
+    pub fn label_font_id(mut self, font_id: conrod_core::text::font::Id) -> Self {
         self.style.label_font_id = Some(Some(font_id));
         self
     }
@@ -195,18 +195,18 @@ impl<'a> Labelable<'a> for ListSelect<'a> {
         self.maybe_label = Some(text);
         self
     }
-    fn label_color(mut self, color: conrod::Color) -> Self {
+    fn label_color(mut self, color: conrod_core::Color) -> Self {
         self.style.label_color = Some(color);
         self
     }
-    fn label_font_size(mut self, size: conrod::FontSize) -> Self {
+    fn label_font_size(mut self, size: conrod_core::FontSize) -> Self {
         self.style.label_font_size = Some(size);
         self
     }
 }
 
 impl<'a> Colorable for ListSelect<'a> {
-    fn color(mut self, color: conrod::Color) -> Self {
+    fn color(mut self, color: conrod_core::Color) -> Self {
         self.style.color = Some(color);
         self
     }

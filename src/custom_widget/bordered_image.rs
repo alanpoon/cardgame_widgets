@@ -1,6 +1,6 @@
-use conrod::{widget, Positionable, Widget, Sizeable, image, Color, Rect, Scalar};
-use conrod::widget::Rectangle;
-use conrod::UiCell;
+use conrod_core::{widget, Positionable, Widget, Sizeable, image, Color, Rect, Scalar};
+use conrod_core::widget::Rectangle;
+use conrod_core::UiCell;
 
 /// The type upon which we'll implement the `Widget` trait.
 #[derive(WidgetCommon)]

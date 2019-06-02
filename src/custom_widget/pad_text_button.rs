@@ -1,9 +1,9 @@
 //! The `Button` widget and related items.
 
-use conrod::{Color, Colorable, FontSize, Borderable, Labelable, Positionable, Sizeable, UiCell,
+use conrod_core::{Color, Colorable, FontSize, Borderable, Labelable, Positionable, Sizeable, UiCell,
              Widget, image, text};
-use conrod::position::{self, Align, Rect, Scalar};
-use conrod::widget;
+use conrod_core::position::{self, Align, Rect, Scalar};
+use conrod_core::widget;
 
 
 /// A pressable button widget whose reaction is triggered upon release.

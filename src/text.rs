@@ -1,4 +1,4 @@
-use conrod::{Scalar, FontSize};
+use conrod_core::{Scalar, FontSize};
 use std::cmp::min;
 const LABEL_PADDING: f64 = 4.0;
 /// Return the dimensions of a value glyph slot.

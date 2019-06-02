@@ -1,6 +1,6 @@
-use conrod::{widget, Positionable, Widget, Sizeable, text, Color, Colorable, Scalar};
-use conrod::widget::primitive::image::Image;
-use conrod::widget::Rectangle;
+use conrod_core::{widget, Positionable, Widget, Sizeable, text, Color, Colorable, Scalar};
+use conrod_core::widget::primitive::image::Image;
+use conrod_core::widget::Rectangle;
 use text::get_font_size_wh;
 #[derive(Clone)]
 pub struct IconStruct(pub Image, pub String, pub String);

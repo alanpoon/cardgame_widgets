@@ -1,4 +1,4 @@
-use conrod::{Borderable, image, Widget};
+use conrod_core::{Borderable, image, Widget};
 use std::collections::HashSet;
 use std::collections::hash_map::RandomState;
 pub mod item_history;

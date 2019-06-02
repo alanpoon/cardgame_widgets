@@ -1,4 +1,4 @@
-use conrod::{widget, Color, Colorable, Positionable, UiCell, Widget, Sizeable, Rect, text};
+use conrod_core::{widget, Color, Colorable, Positionable, UiCell, Widget, Sizeable, Rect, text};
 use custom_widget::player_info::item::{Icon, IconStruct};
 use text::get_font_size_wh;
 //Player_info list all player's item, at the end, there is some arrow animation that opens another overlay
@@ -141,7 +141,7 @@ impl<'a> Widget for List<'a> {
             }
             y
         }) {
-            use conrod::widget::list_select::Event;
+            use conrod_core::widget::list_select::Event;
             match event {
                 Event::Item(item) => {
                     if let Some(ref info) = self.icon_vec.get(item.i) {

@@ -1,7 +1,7 @@
-use conrod::{self, widget, Colorable, Positionable, Widget, Sizeable, color, Borderable, Ui, UiCell,
+use conrod_core::{self, widget, Colorable, Positionable, Widget, Sizeable, color, Borderable, Ui, UiCell,
              graph, Scalar};
 use std;
-const MARGIN: conrod::Scalar = 5.0;
+const MARGIN: conrod_core::Scalar = 5.0;
 #[derive(Debug)]
 
 /// The type upon which we'll implement the `Widget` trait.
@@ -23,15 +23,15 @@ pub struct TabView<'a> {
 pub struct Style {
     /// Color of the button's label.
     #[conrod(default = "theme.shape_color")]
-    pub color: Option<conrod::Color>,
+    pub color: Option<conrod_core::Color>,
     #[conrod(default = "theme.label_color")]
-    pub label_color: Option<conrod::Color>,
+    pub label_color: Option<conrod_core::Color>,
     /// Font size of the button's label.
     #[conrod(default = "theme.font_size_medium")]
-    pub label_font_size: Option<conrod::FontSize>,
+    pub label_font_size: Option<conrod_core::FontSize>,
     /// Specify a unique font for the label.
     #[conrod(default = "theme.font_id")]
-    pub label_font_id: Option<Option<conrod::text::font::Id>>,
+    pub label_font_id: Option<Option<conrod_core::text::font::Id>>,
     #[conrod(default = "90.0")]
     pub bar_thickness: Option<Scalar>,
 }

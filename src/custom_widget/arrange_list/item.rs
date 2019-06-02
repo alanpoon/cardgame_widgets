@@ -1,7 +1,7 @@
 use custom_widget::arrange_list::{Hoverable, ImageHover, Arrangeable, TimesClicked};
-use conrod::{widget, Positionable, Widget, Sizeable, Color, Scalar, Borderable, Colorable, UiCell,
+use conrod_core::{widget, Positionable, Widget, Sizeable, Color, Scalar, Borderable, Colorable, UiCell,
              Rect};
-use conrod::widget::Rectangle;
+use conrod_core::widget::Rectangle;
 /// The type upon which we'll implement the `Widget` trait.
 #[derive(WidgetCommon)]
 pub struct ItemWidget<H: Hoverable> {

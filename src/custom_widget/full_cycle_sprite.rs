@@ -1,4 +1,4 @@
-use conrod::{widget, Positionable, Widget, Sizeable, Rect, image};
+use conrod_core::{widget, Positionable, Widget, Sizeable, Rect, image};
 use sprite::{spriteable_rect, Spriteable};
 use std::time::{Duration, Instant};
 

@@ -1,4 +1,4 @@
-use conrod::{self, widget, Positionable, Widget, Sizeable, Labelable, Colorable, color};
+use conrod_core::{self, widget, Positionable, Widget, Sizeable, Labelable, Colorable, color};
 use custom_widget::animated_canvas;
 use custom_widget::pad_text_button;
 pub trait PromptSendable {
@@ -23,16 +23,16 @@ pub struct PromptView<'a, PS>
 pub struct Style {
     /// Color of the button's label.
     #[conrod(default = "theme.shape_color")]
-    pub color: Option<conrod::Color>,
+    pub color: Option<conrod_core::Color>,
     /// Font size of the button's label.
     #[conrod(default = "theme.font_size_medium")]
-    pub label_font_size: Option<conrod::FontSize>,
+    pub label_font_size: Option<conrod_core::FontSize>,
     /// Specify a unique font for the label.
     #[conrod(default = "theme.font_id")]
-    pub label_font_id: Option<Option<conrod::text::font::Id>>,
+    pub label_font_id: Option<Option<conrod_core::text::font::Id>>,
     /// Color of the bg_color.
     #[conrod(default = "color::BLACK.with_alpha(0.4)")]
-    pub bg_color: Option<conrod::Color>,
+    pub bg_color: Option<conrod_core::Color>,
     /// Dimension of the prompt
     #[conrod(default = "[500.0,300.0]")]
     pub prompt_wh: Option<[f64; 2]>,
@@ -72,14 +72,14 @@ impl<'a, PS> PromptView<'a, PS>
     }
 
     /// Specify the font used for displaying the label.
-    pub fn label_font_id(mut self, font_id: conrod::text::font::Id) -> Self {
+    pub fn label_font_id(mut self, font_id: conrod_core::text::font::Id) -> Self {
         self.style.label_font_id = Some(Some(font_id));
         self
     }
     builder_methods!{
-        pub color { style.color = Some(conrod::Color) }
-        pub label_font_size{style.label_font_size = Some(conrod::FontSize)}
-        pub bg_color { style.bg_color = Some(conrod::Color) }
+        pub color { style.color = Some(conrod_core::Color) }
+        pub label_font_size{style.label_font_size = Some(conrod_core::FontSize)}
+        pub bg_color { style.bg_color = Some(conrod_core::Color) }
         pub prompt_wh { style.prompt_wh = Some([f64;2]) }
         pub item_size{style.item_size = Some(f64)}
     }
