@@ -1,4 +1,3 @@
-#[macro_use]
 extern crate conrod_derive;
 #[macro_use]
 extern crate conrod_core;
